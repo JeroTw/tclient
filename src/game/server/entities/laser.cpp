@@ -102,11 +102,9 @@ bool CLaser::HitCharacter(vec2 From, vec2 To)
 	return true;
 }
 
-void CLaser::DoBounce(bool EarlyTick)
+void CLaser::DoBounce()
 {
 	m_EvalTick = Server()->Tick();
-	if(EarlyTick)
-		m_EvalTick--;
 
 	if(m_Energy < 0)
 	{

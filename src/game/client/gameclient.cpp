@@ -659,7 +659,7 @@ void CGameClient::OnReset()
 	m_GameWorld.Clear();
 	m_GameWorld.m_WorldConfig.m_InfiniteAmmo = true;
 	m_PredictedWorld.CopyWorld(&m_GameWorld);
-	m_PrevPredictedWorld.CopyWorld(&m_PredictedWorld);
+	m_PrevPredictedWorld.CopyWorld(&m_GameWorld);
 
 	m_vSnapEntities.clear();
 
@@ -2399,8 +2399,8 @@ void CGameClient::OnPredict()
 		}
 	}
 
-	if(g_Config.m_ClFastInput)
-		m_PredictedWorld.CopyWorld(&m_PrevPredictedWorld);
+	//if(g_Config.m_ClFastInput)
+	//	m_PredictedWorld.CopyWorld(&m_PrevPredictedWorld);
 
 	if(g_Config.m_ClRemoveAnti)
 	{

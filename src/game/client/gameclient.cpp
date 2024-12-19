@@ -2308,7 +2308,7 @@ void CGameClient::OnPredict()
 		// fetch the previous characters
 		if(Tick == FinalTickSelf)
 		{
-			m_PrevPredictedWorld.CopyWorld(&m_PredictedWorld);
+			//m_PrevPredictedWorld.CopyWorld(&m_PredictedWorld);
 			m_PredictedPrevChar = pLocalChar->GetCore();
 			m_aClients[m_Snap.m_LocalClientId].m_PrevPredicted = pLocalChar->GetCore();
 		}

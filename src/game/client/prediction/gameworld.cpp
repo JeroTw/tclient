@@ -621,6 +621,7 @@ void CGameWorld::CopyWorldClean(CGameWorld *pFrom)
 			if(pCopy)
 			{
 				pCopy->m_pParent = nullptr;
+				pCopy->m_pChild = nullptr;
 				this->InsertEntity(pCopy);
 			}
 		}

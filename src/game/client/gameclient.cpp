@@ -2506,8 +2506,8 @@ void CGameClient::OnPredict()
 	// TClient
 	// New antiping smoothing
 
-	//if(m_NewPredictedTick)
-	//	m_PredSmoothingWorld.CopyWorldClean(&m_PredictedWorld);
+	if(m_NewPredictedTick)
+		m_PredSmoothingWorld.CopyWorldClean(&m_PredictedWorld);
 
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{

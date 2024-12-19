@@ -626,7 +626,6 @@ void CGameWorld::CopyWorldClean(CGameWorld *pFrom)
 			}
 		}
 	}
-	m_IsValidCopy = true;
 }
 
 void CGameWorld::CopyWorld(CGameWorld *pFrom)

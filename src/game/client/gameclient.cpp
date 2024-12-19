@@ -659,7 +659,6 @@ void CGameClient::OnReset()
 	m_GameWorld.Clear();
 	m_GameWorld.m_WorldConfig.m_InfiniteAmmo = true;
 	m_PredictedWorld.CopyWorld(&m_GameWorld);
-	m_PrevPredictedWorld.CopyWorld(&m_GameWorld);
 
 	m_vSnapEntities.clear();
 

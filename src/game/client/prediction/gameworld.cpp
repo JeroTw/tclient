@@ -620,8 +620,8 @@ void CGameWorld::CopyWorldClean(CGameWorld *pFrom)
 				pCopy = new CPickup(*((CPickup *)pEnt));
 			if(pCopy)
 			{
-				pCopy->m_pParent = pEnt;
-				pEnt->m_pChild = pCopy;
+				//pCopy->m_pParent = pEnt;
+				//pEnt->m_pChild = pCopy;
 				this->InsertEntity(pCopy);
 			}
 		}

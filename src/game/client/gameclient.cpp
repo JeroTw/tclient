@@ -2284,6 +2284,7 @@ void CGameClient::OnPredict()
 			pProj->Destroy();
 		}
 	}
+	m_PrevPredictedWorld.CopyWorld(&m_PredictedWorld);
 
 	CCharacter *pLocalChar = m_PredictedWorld.GetCharacterById(m_Snap.m_LocalClientId);
 	if(!pLocalChar)

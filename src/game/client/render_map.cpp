@@ -124,16 +124,6 @@ const CEnvPointBezier *CMapBasedEnvelopePointAccess::GetBezier(int Index) const
 	return nullptr;
 }
 
-static double CubicRoot(double x)
-{
-	if(x == 0.0)
-		return 0.0;
-	else if(x < 0.0)
-		return -std::exp(std::log(-x) / 3.0);
-	else
-		return std::exp(std::log(x) / 3.0);
-}
-
 static float SolveBezier(float x, float p0, float p1, float p2, float p3)
 {
 	const double x3 = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
@@ -193,12 +183,12 @@ static float SolveBezier(float x, float p0, float p1, float p2, float p3)
 		{
 			// only one 'real' solution
 			const double s = std::sqrt(D);
-			return CubicRoot(s - q) - CubicRoot(s + q) - sub;
+			return std::cbrt(s - q) - std::cbrt(s + q) - sub;
 		}
 		else if(D == 0.0)
 		{
 			// one single, one double solution or triple solution
-			const double s = CubicRoot(-q);
+			const double s = std::cbrt(-q);
 			const double t = 2.0 * s - sub;
 
 			if(0.0 <= t && t <= 1.0001)
@@ -658,6 +648,73 @@ void CRenderTools::RenderTilemap(CTile *pTiles, int w, int h, float Scale, Color
 			}
 			x += pTiles[c].m_Skip;
 		}
+	}
+
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DEnd();
+	else
+		Graphics()->QuadsEnd();
+	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
+}
+
+void CRenderTools::RenderTile(int x, int y, unsigned char Index, float Scale, ColorRGBA Color) const
+{
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DBegin();
+	else
+		Graphics()->QuadsBegin();
+
+	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+	// calculate the final pixelsize for the tiles
+	float TilePixelSize = 1024 / Scale;
+	float FinalTileSize = Scale / (ScreenX1 - ScreenX0) * Graphics()->ScreenWidth();
+	float FinalTilesetScale = FinalTileSize / TilePixelSize;
+
+	float TexSize = 1024.0f;
+	float Frac = (1.25f / TexSize) * (1 / FinalTilesetScale);
+	float Nudge = (0.5f / TexSize) * (1 / FinalTilesetScale);
+
+	int tx = Index % 16;
+	int ty = Index / 16;
+	int Px0 = tx * (1024 / 16);
+	int Py0 = ty * (1024 / 16);
+	int Px1 = Px0 + (1024 / 16) - 1;
+	int Py1 = Py0 + (1024 / 16) - 1;
+
+	float x0 = Nudge + Px0 / TexSize + Frac;
+	float y0 = Nudge + Py0 / TexSize + Frac;
+	float x1 = Nudge + Px1 / TexSize - Frac;
+	float y1 = Nudge + Py0 / TexSize + Frac;
+	float x2 = Nudge + Px1 / TexSize - Frac;
+	float y2 = Nudge + Py1 / TexSize - Frac;
+	float x3 = Nudge + Px0 / TexSize + Frac;
+	float y3 = Nudge + Py1 / TexSize - Frac;
+
+	if(Graphics()->HasTextureArraysSupport())
+	{
+		x0 = 0;
+		y0 = 0;
+		x1 = x0 + 1;
+		y1 = y0;
+		x2 = x0 + 1;
+		y2 = y0 + 1;
+		x3 = x0;
+		y3 = y0 + 1;
+	}
+
+	if(Graphics()->HasTextureArraysSupport())
+	{
+		Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3, Index);
+		IGraphics::CQuadItem QuadItem(x, y, Scale, Scale);
+		Graphics()->QuadsTex3DDrawTL(&QuadItem, 1);
+	}
+	else
+	{
+		Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3);
+		IGraphics::CQuadItem QuadItem(x, y, Scale, Scale);
+		Graphics()->QuadsDrawTL(&QuadItem, 1);
 	}
 
 	if(Graphics()->HasTextureArraysSupport())

@@ -48,6 +48,7 @@ void CPlayer::Reset()
 	m_SpectatorId = SPEC_FREEVIEW;
 	m_LastActionTick = Server()->Tick();
 	m_TeamChangeTick = Server()->Tick();
+	m_LastSetTeam = 0;
 	m_LastInvited = 0;
 	m_WeakHookSpawn = false;
 
@@ -116,6 +117,7 @@ void CPlayer::Reset()
 
 	m_Paused = PAUSE_NONE;
 	m_DND = false;
+	m_Whispers = true;
 
 	m_LastPause = 0;
 	m_Score.reset();
@@ -144,6 +146,8 @@ void CPlayer::Reset()
 	m_SwapTargetsClientId = -1;
 	m_BirthdayAnnounced = false;
 	m_RescueMode = RESCUEMODE_AUTO;
+
+	m_CameraInfo.Reset();
 }
 
 static int PlayerFlags_SixToSeven(int Flags)
@@ -376,7 +380,7 @@ void CPlayer::Snap(int SnappingClient)
 		pPlayerInfo->m_PlayerFlags = PlayerFlags_SixToSeven(m_PlayerFlags);
 		if(SnappingClientVersion >= VERSION_DDRACE && (m_PlayerFlags & PLAYERFLAG_AIM))
 			pPlayerInfo->m_PlayerFlags |= protocol7::PLAYERFLAG_AIM;
-		if(Server()->ClientAuthed(m_ClientId))
+		if(Server()->GetAuthedState(m_ClientId) != AUTHED_NO)
 			pPlayerInfo->m_PlayerFlags |= protocol7::PLAYERFLAG_ADMIN;
 
 		// Times are in milliseconds for 0.7
@@ -406,6 +410,25 @@ void CPlayer::Snap(int SnappingClient)
 			pSpectatorInfo->m_SpectatorId = m_SpectatorId;
 			pSpectatorInfo->m_X = m_ViewPos.x;
 			pSpectatorInfo->m_Y = m_ViewPos.y;
+		}
+	}
+
+	if(m_ClientId == SnappingClient)
+	{
+		// send extended spectator info even when playing, this allows demo to record camera settings for local player
+		const int SpectatingClient = ((m_Team != TEAM_SPECTATORS && !m_Paused) || m_SpectatorId < 0 || m_SpectatorId >= MAX_CLIENTS) ? id : m_SpectatorId;
+		const CPlayer *pSpecPlayer = GameServer()->m_apPlayers[SpectatingClient];
+
+		if(pSpecPlayer)
+		{
+			CNetObj_DDNetSpectatorInfo *pDDNetSpectatorInfo = Server()->SnapNewItem<CNetObj_DDNetSpectatorInfo>(id);
+			if(!pDDNetSpectatorInfo)
+				return;
+
+			pDDNetSpectatorInfo->m_HasCameraInfo = pSpecPlayer->m_CameraInfo.m_HasCameraInfo;
+			pDDNetSpectatorInfo->m_Zoom = pSpecPlayer->m_CameraInfo.m_Zoom * 1000.0f;
+			pDDNetSpectatorInfo->m_Deadzone = pSpecPlayer->m_CameraInfo.m_Deadzone;
+			pDDNetSpectatorInfo->m_FollowFactor = pSpecPlayer->m_CameraInfo.m_FollowFactor;
 		}
 	}
 
@@ -514,7 +537,7 @@ void CPlayer::OnPlayerInput(CNetObj_PlayerInput *pNewInput)
 
 	m_NumInputs++;
 
-	if(m_pCharacter && !m_Paused)
+	if(m_pCharacter && !m_Paused && !(pNewInput->m_PlayerFlags & PLAYERFLAG_SPEC_CAM))
 		m_pCharacter->OnPredictedInput(pNewInput);
 
 	// Magic number when we can hope that client has successfully identified itself
@@ -531,7 +554,7 @@ void CPlayer::OnPlayerFreshInput(CNetObj_PlayerInput *pNewInput)
 
 	AfkTimer();
 
-	if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_SpectatorId == SPEC_FREEVIEW)
+	if(((pNewInput->m_PlayerFlags & PLAYERFLAG_SPEC_CAM) || GetClientVersion() < VERSION_DDNET_PLAYERFLAG_SPEC_CAM) && ((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_SpectatorId == SPEC_FREEVIEW)
 		m_ViewPos = vec2(pNewInput->m_TargetX, pNewInput->m_TargetY);
 
 	// check for activity
@@ -743,6 +766,11 @@ bool CPlayer::CanOverrideDefaultEmote() const
 	return m_LastEyeEmote == 0 || m_LastEyeEmote + (int64_t)g_Config.m_SvEyeEmoteChangeDelay * Server()->TickSpeed() < Server()->Tick();
 }
 
+bool CPlayer::CanSpec() const
+{
+	return m_pCharacter->IsGrounded() && m_pCharacter->m_Pos == m_pCharacter->m_PrevPos;
+}
+
 void CPlayer::ProcessPause()
 {
 	if(m_ForcePauseTime && m_ForcePauseTime < Server()->Tick())
@@ -751,7 +779,7 @@ void CPlayer::ProcessPause()
 		Pause(PAUSE_NONE, true);
 	}
 
-	if(m_Paused == PAUSE_SPEC && !m_pCharacter->IsPaused() && m_pCharacter->IsGrounded() && m_pCharacter->m_Pos == m_pCharacter->m_PrevPos)
+	if(m_Paused == PAUSE_SPEC && !m_pCharacter->IsPaused() && CanSpec())
 	{
 		m_pCharacter->Pause(true);
 		GameServer()->CreateDeath(m_pCharacter->m_Pos, m_ClientId, GameServer()->m_pController->GetMaskForPlayerWorldEvent(m_ClientId));
@@ -910,7 +938,7 @@ void CPlayer::ProcessScoreResult(CScorePlayerResult &Result)
 			}
 			Server()->ExpireServerInfo();
 			int Birthday = Result.m_Data.m_Info.m_Birthday;
-			if(Birthday != 0 && !m_BirthdayAnnounced)
+			if(Birthday != 0 && !m_BirthdayAnnounced && GetCharacter())
 			{
 				char aBuf[512];
 				str_format(aBuf, sizeof(aBuf),
@@ -922,6 +950,8 @@ void CPlayer::ProcessScoreResult(CScorePlayerResult &Result)
 					Server()->ClientName(m_ClientId), Birthday, Birthday > 1 ? "s" : "");
 				GameServer()->SendBroadcast(aBuf, m_ClientId);
 				m_BirthdayAnnounced = true;
+
+				GameServer()->CreateBirthdayEffect(GetCharacter()->m_Pos, GetCharacter()->TeamMask());
 			}
 			GameServer()->SendRecord(m_ClientId);
 			break;
@@ -935,4 +965,34 @@ void CPlayer::ProcessScoreResult(CScorePlayerResult &Result)
 			break;
 		}
 	}
+}
+
+vec2 CPlayer::CCameraInfo::ConvertTargetToWorld(vec2 Position, vec2 Target) const
+{
+	vec2 TargetCameraOffset(0, 0);
+	float l = length(Target);
+
+	if(l > 0.0001f) // make sure that this isn't 0
+	{
+		float OffsetAmount = maximum(l - m_Deadzone, 0.0f) * (m_FollowFactor / 100.0f);
+		TargetCameraOffset = normalize_pre_length(Target, l) * OffsetAmount;
+	}
+
+	return Position + (Target - TargetCameraOffset) * m_Zoom + TargetCameraOffset;
+}
+
+void CPlayer::CCameraInfo::Write(const CNetMsg_Cl_CameraInfo *Msg)
+{
+	m_HasCameraInfo = true;
+	m_Zoom = Msg->m_Zoom / 1000.0f;
+	m_Deadzone = Msg->m_Deadzone;
+	m_FollowFactor = Msg->m_FollowFactor;
+}
+
+void CPlayer::CCameraInfo::Reset()
+{
+	m_HasCameraInfo = false;
+	m_Zoom = 1.0f;
+	m_Deadzone = 0.0f;
+	m_FollowFactor = 0.0f;
 }

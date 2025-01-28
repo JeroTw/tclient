@@ -1,11 +1,13 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 
+#include <engine/client/enums.h>
 #include <engine/demo.h>
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
 #include <game/gamecore.h>
 #include <game/generated/client_data.h>
+#include <game/generated/client_data7.h>
 #include <game/generated/protocol.h>
 
 #include <game/mapitems.h>
@@ -26,6 +28,54 @@
 #include <base/math.h>
 
 void CPlayers::RenderHand(const CTeeRenderInfo *pInfo, vec2 CenterPos, vec2 Dir, float AngleOffset, vec2 PostRotOffset, float Alpha)
+{
+	if(pInfo->m_aSixup[g_Config.m_ClDummy].m_aTextures[protocol7::SKINPART_BODY].IsValid())
+		RenderHand7(pInfo, CenterPos, Dir, AngleOffset, PostRotOffset, Alpha);
+	else
+		RenderHand6(pInfo, CenterPos, Dir, AngleOffset, PostRotOffset, Alpha);
+}
+
+void CPlayers::RenderHand7(const CTeeRenderInfo *pInfo, vec2 CenterPos, vec2 Dir, float AngleOffset, vec2 PostRotOffset, float Alpha)
+{
+	// in-game hand size is 15 when tee size is 64
+	float BaseSize = 15.0f * (pInfo->m_Size / 64.0f);
+
+	vec2 HandPos = CenterPos + Dir;
+	float Angle = angle(Dir);
+	if(Dir.x < 0)
+		Angle -= AngleOffset;
+	else
+		Angle += AngleOffset;
+
+	vec2 DirX = Dir;
+	vec2 DirY(-Dir.y, Dir.x);
+
+	if(Dir.x < 0)
+		DirY = -DirY;
+
+	HandPos += DirX * PostRotOffset.x;
+	HandPos += DirY * PostRotOffset.y;
+
+	ColorRGBA Color = pInfo->m_aSixup[g_Config.m_ClDummy].m_aColors[protocol7::SKINPART_HANDS];
+	Color.a = Alpha;
+	IGraphics::CQuadItem QuadOutline(HandPos.x, HandPos.y, 2 * BaseSize, 2 * BaseSize);
+	IGraphics::CQuadItem QuadHand = QuadOutline;
+
+	Graphics()->TextureSet(pInfo->m_aSixup[g_Config.m_ClDummy].m_aTextures[protocol7::SKINPART_HANDS]);
+	Graphics()->QuadsBegin();
+	Graphics()->SetColor(Color);
+	Graphics()->QuadsSetRotation(Angle);
+
+	RenderTools()->SelectSprite7(client_data7::SPRITE_TEE_HAND_OUTLINE);
+	Graphics()->QuadsDraw(&QuadOutline, 1);
+	RenderTools()->SelectSprite7(client_data7::SPRITE_TEE_HAND);
+	Graphics()->QuadsDraw(&QuadHand, 1);
+
+	Graphics()->QuadsSetRotation(0);
+	Graphics()->QuadsEnd();
+}
+
+void CPlayers::RenderHand6(const CTeeRenderInfo *pInfo, vec2 CenterPos, vec2 Dir, float AngleOffset, vec2 PostRotOffset, float Alpha)
 {
 	vec2 HandPos = CenterPos + Dir;
 	float Angle = angle(Dir);
@@ -136,10 +186,10 @@ void CPlayers::RenderHookCollLine(
 		IntraTick = m_pClient->m_aClients[ClientId].m_IsPredicted ? Client()->PredIntraGameTick(g_Config.m_ClDummy) : Client()->IntraGameTick(g_Config.m_ClDummy);
 
 	float Angle;
-	if(Local && (!m_pClient->m_Snap.m_SpecInfo.m_Active || m_pClient->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW) && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+	if(Local && !m_pClient->m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 	{
 		// just use the direct input if it's the local player we are rendering
-		Angle = angle(m_pClient->m_Controls.m_aMousePos[g_Config.m_ClDummy] * m_pClient->m_Camera.m_Zoom);
+		Angle = angle(m_pClient->m_Controls.m_aMousePos[g_Config.m_ClDummy]);
 	}
 	else
 	{
@@ -154,8 +204,21 @@ void CPlayers::RenderHookCollLine(
 		Position = mix(vec2(Prev.m_X, Prev.m_Y), vec2(Player.m_X, Player.m_Y), IntraTick);
 	// draw hook collision line
 	{
+		bool Aim = (Player.m_PlayerFlags & PLAYERFLAG_AIM);
+		if(!Client()->ServerCapAnyPlayerFlag())
+		{
+			for(int i = 0; i < NUM_DUMMIES; i++)
+			{
+				if(ClientId == m_pClient->m_aLocalIds[i])
+				{
+					Aim = GameClient()->m_Controls.m_aShowHookColl[i];
+					break;
+				}
+			}
+		}
+
 		bool AlwaysRenderHookColl = GameClient()->m_GameInfo.m_AllowHookColl && (Local ? g_Config.m_ClShowHookCollOwn : g_Config.m_ClShowHookCollOther) == 2;
-		bool RenderHookCollPlayer = ClientId >= 0 && Player.m_PlayerFlags & PLAYERFLAG_AIM && (Local ? g_Config.m_ClShowHookCollOwn : g_Config.m_ClShowHookCollOther) > 0;
+		bool RenderHookCollPlayer = ClientId >= 0 && Aim && (Local ? g_Config.m_ClShowHookCollOwn : g_Config.m_ClShowHookCollOther) > 0;
 		if(Local && GameClient()->m_GameInfo.m_AllowHookColl && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 			RenderHookCollPlayer = GameClient()->m_Controls.m_aShowHookColl[g_Config.m_ClDummy] && g_Config.m_ClShowHookCollOwn > 0;
 
@@ -167,11 +230,9 @@ void CPlayers::RenderHookCollLine(
 		{
 			vec2 ExDirection = Direction;
 
-			if(Local && (!m_pClient->m_Snap.m_SpecInfo.m_Active || m_pClient->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW) && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+			if(Local && !m_pClient->m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 			{
-				ExDirection = normalize(
-					vec2((int)((int)m_pClient->m_Controls.m_aMousePos[g_Config.m_ClDummy].x * m_pClient->m_Camera.m_Zoom),
-						(int)((int)m_pClient->m_Controls.m_aMousePos[g_Config.m_ClDummy].y * m_pClient->m_Camera.m_Zoom)));
+				ExDirection = normalize(vec2((int)m_pClient->m_Controls.m_aMousePos[g_Config.m_ClDummy].x, (int)m_pClient->m_Controls.m_aMousePos[g_Config.m_ClDummy].y));
 
 				// fix direction if mouse is exactly in the center
 				if(!(int)m_pClient->m_Controls.m_aMousePos[g_Config.m_ClDummy].x && !(int)m_pClient->m_Controls.m_aMousePos[g_Config.m_ClDummy].y)
@@ -181,7 +242,8 @@ void CPlayers::RenderHookCollLine(
 			vec2 InitPos = Position;
 			vec2 FinishPos = InitPos + ExDirection * (m_pClient->m_aTuning[g_Config.m_ClDummy].m_HookLength - 42.0f);
 
-			if(g_Config.m_ClHookCollSize > 0)
+			const int HookCollSize = Local ? g_Config.m_ClHookCollSize : g_Config.m_ClHookCollSizeOther;
+			if(HookCollSize > 0)
 				Graphics()->QuadsBegin();
 			else
 				Graphics()->LinesBegin();
@@ -192,6 +254,8 @@ void CPlayers::RenderHookCollLine(
 			vec2 NewPos = OldPos;
 
 			bool DoBreak = false;
+
+			std::vector<std::pair<vec2, vec2>> vLineSegments;
 
 			do
 			{
@@ -204,9 +268,25 @@ void CPlayers::RenderHookCollLine(
 					DoBreak = true;
 				}
 
-				int Hit = Collision()->IntersectLineTeleHook(OldPos, NewPos, &FinishPos, 0x0);
+				int Tele;
+				int Hit = Collision()->IntersectLineTeleHook(OldPos, NewPos, &FinishPos, 0x0, &Tele);
+				if(!DoBreak && Hit == TILE_TELEINHOOK)
+				{
+					if(Collision()->TeleOuts(Tele - 1).size() != 1)
+					{
+						Hit = Collision()->IntersectLineTeleHook(OldPos, NewPos, &FinishPos, 0x0);
+					}
+					else
+					{
+						std::pair<vec2, vec2> NewPair = std::make_pair(InitPos, FinishPos);
+						if(std::find(vLineSegments.begin(), vLineSegments.end(), NewPair) != vLineSegments.end())
+							break;
+						vLineSegments.push_back(NewPair);
+						InitPos = NewPos = Collision()->TeleOuts(Tele - 1)[0];
+					}
+				}
 
-				if(!DoBreak && Hit)
+				if(!DoBreak && Hit && Hit != TILE_TELEINHOOK)
 				{
 					if(Hit != TILE_NOHOOK)
 					{
@@ -220,7 +300,7 @@ void CPlayers::RenderHookCollLine(
 					break;
 				}
 
-				if(Hit)
+				if(Hit && Hit != TILE_TELEINHOOK)
 					break;
 
 				NewPos.x = round_to_int(NewPos.x);
@@ -233,28 +313,41 @@ void CPlayers::RenderHookCollLine(
 				ExDirection.y = round_to_int(ExDirection.y * 256.0f) / 256.0f;
 			} while(!DoBreak);
 
+			std::pair<vec2, vec2> NewPair = std::make_pair(InitPos, FinishPos);
+			if(std::find(vLineSegments.begin(), vLineSegments.end(), NewPair) == vLineSegments.end())
+				vLineSegments.push_back(NewPair);
+
 			if(AlwaysRenderHookColl && RenderHookCollPlayer)
 			{
 				// invert the hook coll colors when using cl_show_hook_coll_always and +showhookcoll is pressed
 				HookCollColor = color_invert(HookCollColor);
 			}
 			Graphics()->SetColor(HookCollColor.WithAlpha(Alpha));
-			if(g_Config.m_ClHookCollSize > 0)
+			for(const auto &[DrawInitPos, DrawFinishPos] : vLineSegments)
 			{
-				float LineWidth = 0.5f + (float)(g_Config.m_ClHookCollSize - 1) * 0.25f;
-				vec2 PerpToAngle = normalize(vec2(ExDirection.y, -ExDirection.x)) * GameClient()->m_Camera.m_Zoom;
-				vec2 Pos0 = FinishPos + PerpToAngle * -LineWidth;
-				vec2 Pos1 = FinishPos + PerpToAngle * LineWidth;
-				vec2 Pos2 = InitPos + PerpToAngle * -LineWidth;
-				vec2 Pos3 = InitPos + PerpToAngle * LineWidth;
-				IGraphics::CFreeformItem FreeformItem(Pos0.x, Pos0.y, Pos1.x, Pos1.y, Pos2.x, Pos2.y, Pos3.x, Pos3.y);
-				Graphics()->QuadsDrawFreeform(&FreeformItem, 1);
+				if(HookCollSize > 0)
+				{
+					float LineWidth = 0.5f + (float)(HookCollSize - 1) * 0.25f;
+					vec2 PerpToAngle = normalize(vec2(ExDirection.y, -ExDirection.x)) * GameClient()->m_Camera.m_Zoom;
+					vec2 Pos0 = DrawFinishPos + PerpToAngle * -LineWidth;
+					vec2 Pos1 = DrawFinishPos + PerpToAngle * LineWidth;
+					vec2 Pos2 = DrawInitPos + PerpToAngle * -LineWidth;
+					vec2 Pos3 = DrawInitPos + PerpToAngle * LineWidth;
+					IGraphics::CFreeformItem FreeformItem(Pos0.x, Pos0.y, Pos1.x, Pos1.y, Pos2.x, Pos2.y, Pos3.x, Pos3.y);
+					Graphics()->QuadsDrawFreeform(&FreeformItem, 1);
+				}
+				else
+				{
+					IGraphics::CLineItem LineItem(DrawInitPos.x, DrawInitPos.y, DrawFinishPos.x, DrawFinishPos.y);
+					Graphics()->LinesDraw(&LineItem, 1);
+				}
+			}
+			if(HookCollSize > 0)
+			{
 				Graphics()->QuadsEnd();
 			}
 			else
 			{
-				IGraphics::CLineItem LineItem(InitPos.x, InitPos.y, FinishPos.x, FinishPos.y);
-				Graphics()->LinesDraw(&LineItem, 1);
 				Graphics()->LinesEnd();
 			}
 		}
@@ -389,10 +482,10 @@ void CPlayers::RenderPlayer(
 	float AttackTicksPassed = AttackTime * (float)Client()->GameTickSpeed();
 
 	float Angle;
-	if(Local && (!m_pClient->m_Snap.m_SpecInfo.m_Active || m_pClient->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW) && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+	if(Local && !m_pClient->m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 	{
 		// just use the direct input if it's the local player we are rendering
-		Angle = angle(m_pClient->m_Controls.m_aMousePos[g_Config.m_ClDummy] * m_pClient->m_Camera.m_Zoom);
+		Angle = angle(m_pClient->m_Controls.m_aMousePos[g_Config.m_ClDummy]);
 	}
 	else
 	{
@@ -460,12 +553,11 @@ void CPlayers::RenderPlayer(
 	// do skidding
 	if(!InAir && WantOtherDir && length(Vel * 50) > 500.0f)
 	{
-		static int64_t SkidSoundTime = 0;
-		if(time() - SkidSoundTime > time_freq() / 10)
+		if(time() - m_SkidSoundTime > time_freq() / 10)
 		{
 			if(g_Config.m_SndGame)
-				m_pClient->m_Sounds.PlayAt(CSounds::CHN_WORLD, SOUND_PLAYER_SKID, 0.25f, Position);
-			SkidSoundTime = time();
+				m_pClient->m_Sounds.PlayAt(CSounds::CHN_WORLD, SOUND_PLAYER_SKID, 1.0f, Position);
+			m_SkidSoundTime = time();
 		}
 
 		m_pClient->m_Effects.SkidTrail(
@@ -475,6 +567,7 @@ void CPlayers::RenderPlayer(
 	}
 
 	// draw gun
+	if(Player.m_Weapon >= 0)
 	{
 		if(!(RenderInfo.m_TeeRenderFlags & TEE_NO_WEAPON))
 		{
@@ -680,6 +773,10 @@ void CPlayers::RenderPlayer(
 	{
 		GameClient()->m_Effects.FreezingFlakes(BodyPos, vec2(32, 32), Alpha);
 	}
+	if(RenderInfo.m_TeeRenderFlags & TEE_EFFECT_SPARKLE)
+	{
+		GameClient()->m_Effects.SparkleTrail(BodyPos, Alpha);
+	}
 
 	if(ClientId < 0)
 		return;
@@ -697,7 +794,7 @@ void CPlayers::RenderPlayer(
 		Graphics()->QuadsSetRotation(0);
 	}
 
-	if(g_Config.m_ClAfkEmote && m_pClient->m_aClients[ClientId].m_Afk && !(Client()->DummyConnected() && ClientId == m_pClient->m_aLocalIds[!g_Config.m_ClDummy]))
+	if(g_Config.m_ClAfkEmote && m_pClient->m_aClients[ClientId].m_Afk && ClientId != m_pClient->m_aLocalIds[!g_Config.m_ClDummy])
 	{
 		int CurEmoticon = (SPRITE_ZZZ - SPRITE_OOP);
 		Graphics()->TextureSet(GameClient()->m_EmoticonsSkin.m_aSpriteEmoticons[CurEmoticon]);
@@ -757,12 +854,9 @@ void CPlayers::OnRender()
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
 
+	// update render info for ninja
 	CTeeRenderInfo aRenderInfo[MAX_CLIENTS];
-
-	// update RenderInfo for ninja
-	bool IsTeamplay = false;
-	if(m_pClient->m_Snap.m_pGameInfoObj)
-		IsTeamplay = (m_pClient->m_Snap.m_pGameInfoObj->m_GameFlags & GAMEFLAG_TEAMS) != 0;
+	const bool IsTeamPlay = m_pClient->IsTeamPlay();
 	for(int i = 0; i < MAX_CLIENTS; ++i)
 	{
 		aRenderInfo[i] = m_pClient->m_aClients[i].m_RenderInfo;
@@ -771,6 +865,8 @@ void CPlayers::OnRender()
 			aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_FROZEN | TEE_NO_WEAPON;
 		if(m_pClient->m_aClients[i].m_LiveFrozen)
 			aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_FROZEN;
+		if(m_pClient->m_aClients[i].m_Invincible)
+			aRenderInfo[i].m_TeeRenderFlags |= TEE_EFFECT_SPARKLE;
 
 		const CGameClient::CSnapState::CCharacterInfo &CharacterInfo = m_pClient->m_Snap.m_aCharacters[i];
 		const bool Frozen = CharacterInfo.m_HasExtendedData && CharacterInfo.m_ExtendedData.m_FreezeEnd != 0;
@@ -780,12 +876,11 @@ void CPlayers::OnRender()
 			const auto *pSkin = m_pClient->m_Skins.FindOrNullptr("x_ninja");
 			if(pSkin != nullptr)
 			{
-				aRenderInfo[i].m_OriginalRenderSkin = pSkin->m_OriginalSkin;
-				aRenderInfo[i].m_ColorableRenderSkin = pSkin->m_ColorableSkin;
-				aRenderInfo[i].m_BloodColor = pSkin->m_BloodColor;
-				aRenderInfo[i].m_SkinMetrics = pSkin->m_Metrics;
-				aRenderInfo[i].m_CustomColoredSkin = IsTeamplay;
-				if(!IsTeamplay)
+				aRenderInfo[i].m_aSixup[g_Config.m_ClDummy].Reset();
+
+				aRenderInfo[i].Apply(pSkin);
+				aRenderInfo[i].m_CustomColoredSkin = IsTeamPlay;
+				if(!IsTeamPlay)
 				{
 					aRenderInfo[i].m_ColorBody = ColorRGBA(1, 1, 1);
 					aRenderInfo[i].m_ColorFeet = ColorRGBA(1, 1, 1);
@@ -793,13 +888,8 @@ void CPlayers::OnRender()
 			}
 		}
 	}
-	const CSkin *pSkin = m_pClient->m_Skins.Find("x_spec");
 	CTeeRenderInfo RenderInfoSpec;
-	RenderInfoSpec.m_OriginalRenderSkin = pSkin->m_OriginalSkin;
-	RenderInfoSpec.m_ColorableRenderSkin = pSkin->m_ColorableSkin;
-	RenderInfoSpec.m_BloodColor = pSkin->m_BloodColor;
-	RenderInfoSpec.m_SkinMetrics = pSkin->m_Metrics;
-	RenderInfoSpec.m_CustomColoredSkin = false;
+	RenderInfoSpec.Apply(m_pClient->m_Skins.Find("x_spec"));
 	RenderInfoSpec.m_Size = 64.0f;
 	const int LocalClientId = m_pClient->m_Snap.m_LocalClientId;
 
@@ -832,13 +922,13 @@ void CPlayers::OnRender()
 	}
 
 	// render spectating players
-	for(auto &m_aClient : m_pClient->m_aClients)
+	for(auto &Client : m_pClient->m_aClients)
 	{
-		if(!m_aClient.m_SpecCharPresent)
+		if(!Client.m_SpecCharPresent)
 		{
 			continue;
 		}
-		RenderTools()->RenderTee(CAnimState::GetIdle(), &RenderInfoSpec, EMOTE_BLINK, vec2(1, 0), m_aClient.m_SpecChar);
+		RenderTools()->RenderTee(CAnimState::GetIdle(), &RenderInfoSpec, EMOTE_BLINK, vec2(1, 0), Client.m_SpecChar);
 	}
 
 	// render everyone else's tee, then either our own or the tee we are spectating.

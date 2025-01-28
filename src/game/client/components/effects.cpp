@@ -53,11 +53,6 @@ void CEffects::DamageIndicator(vec2 Pos, vec2 Dir, float Alpha)
 	m_pClient->m_DamageInd.Create(Pos, Dir, Alpha);
 }
 
-void CEffects::ResetDamageIndicator()
-{
-	m_pClient->m_DamageInd.Reset();
-}
-
 void CEffects::PowerupShine(vec2 Pos, vec2 Size, float Alpha)
 {
 	if(!m_Add50hz)
@@ -106,6 +101,26 @@ void CEffects::FreezingFlakes(vec2 Pos, vec2 Size, float Alpha)
 	p.m_Color.a = Alpha;
 	p.m_StartAlpha = Alpha;
 	m_pClient->m_Particles.Add(CParticles::GROUP_EXTRA, &p);
+}
+
+void CEffects::SparkleTrail(vec2 Pos, float Alpha)
+{
+	if(!m_Add50hz)
+		return;
+
+	CParticle p;
+	p.SetDefault();
+	p.m_Spr = SPRITE_PART_SPARKLE;
+	p.m_Pos = Pos + random_direction() * random_float(40.0f);
+	p.m_Vel = vec2(0, 0);
+	p.m_LifeSpan = 0.5f;
+	p.m_StartSize = 0.0f;
+	p.m_EndSize = random_float(20.0f, 30.0f);
+	p.m_UseAlphaFading = true;
+	p.m_StartAlpha = Alpha;
+	p.m_EndAlpha = std::min(0.2f, Alpha);
+	p.m_Collides = false;
+	m_pClient->m_Particles.Add(CParticles::GROUP_TRAIL_EXTRA, &p);
 }
 
 void CEffects::SmokeTrail(vec2 Pos, vec2 Vel, float Alpha, float TimePassed)
@@ -226,6 +241,60 @@ void CEffects::PlayerDeath(vec2 Pos, int ClientId, float Alpha)
 		p.m_Friction = 0.8f;
 		ColorRGBA c = BloodColor.v4() * random_float(0.75f, 1.0f);
 		p.m_Color = ColorRGBA(c.r, c.g, c.b, 0.75f * Alpha);
+		p.m_StartAlpha = Alpha;
+		m_pClient->m_Particles.Add(CParticles::GROUP_GENERAL, &p);
+	}
+}
+
+void CEffects::Confetti(vec2 Pos, float Alpha)
+{
+	ColorRGBA Red(1.0f, 0.4f, 0.4f);
+	ColorRGBA Green(0.4f, 1.0f, 0.4f);
+	ColorRGBA Blue(0.4f, 0.4f, 1.0f);
+	ColorRGBA Yellow(1.0f, 1.0f, 0.4f);
+	ColorRGBA Cyan(0.4f, 1.0f, 1.0f);
+	ColorRGBA Magenta(1.0f, 0.4f, 1.0f);
+
+	ColorRGBA aConfettiColors[] = {Red, Green, Blue, Yellow, Cyan, Magenta};
+
+	// powerful confettis
+	for(int i = 0; i < 32; i++)
+	{
+		CParticle p;
+		p.SetDefault();
+		p.m_Spr = SPRITE_PART_SPLAT01 + (rand() % 3);
+		p.m_Pos = Pos;
+		p.m_Vel = direction(-0.5f * pi + random_float(-0.2f, 0.2f)) * random_float(0.01f, 1.0f) * 2000.0f;
+		p.m_LifeSpan = random_float(1.0f, 1.2f);
+		p.m_StartSize = random_float(12.0f, 24.0f);
+		p.m_EndSize = 0;
+		p.m_Rot = random_angle();
+		p.m_Rotspeed = random_float(-0.5f, 0.5f) * pi;
+		p.m_Gravity = -700.0f;
+		p.m_Friction = 0.6f;
+		ColorRGBA c = aConfettiColors[(rand() % std::size(aConfettiColors))];
+		p.m_Color = c.WithMultipliedAlpha(0.75f * Alpha);
+		p.m_StartAlpha = Alpha;
+		m_pClient->m_Particles.Add(CParticles::GROUP_GENERAL, &p);
+	}
+
+	// broader confettis
+	for(int i = 0; i < 32; i++)
+	{
+		CParticle p;
+		p.SetDefault();
+		p.m_Spr = SPRITE_PART_SPLAT01 + (rand() % 3);
+		p.m_Pos = Pos;
+		p.m_Vel = direction(-0.5f * pi + random_float(-0.8f, 0.8f)) * random_float(0.01f, 1.0f) * 1500.0f;
+		p.m_LifeSpan = random_float(0.8f, 1.0f);
+		p.m_StartSize = random_float(12.0f, 24.0f);
+		p.m_EndSize = 0;
+		p.m_Rot = random_angle();
+		p.m_Rotspeed = random_float(-0.5f, 0.5f) * pi;
+		p.m_Gravity = -700.0f;
+		p.m_Friction = 0.6f;
+		ColorRGBA c = aConfettiColors[(rand() % std::size(aConfettiColors))];
+		p.m_Color = c.WithMultipliedAlpha(0.75f * Alpha);
 		p.m_StartAlpha = Alpha;
 		m_pClient->m_Particles.Add(CParticles::GROUP_GENERAL, &p);
 	}

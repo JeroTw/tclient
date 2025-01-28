@@ -78,6 +78,7 @@ void CMenus::HandleDemoSeeking(float PositionToSeek, float TimeToSeek)
 	if((PositionToSeek >= 0.0f && PositionToSeek <= 1.0f) || TimeToSeek != 0.0f)
 	{
 		m_pClient->m_Chat.Reset();
+		m_pClient->m_DamageInd.OnReset();
 		m_pClient->m_InfoMessages.OnReset();
 		m_pClient->m_Particles.OnReset();
 		m_pClient->m_Sounds.OnReset();
@@ -89,8 +90,6 @@ void CMenus::HandleDemoSeeking(float PositionToSeek, float TimeToSeek)
 		else
 			DemoPlayer()->SeekPercent(PositionToSeek);
 		m_pClient->m_SuppressEvents = false;
-		m_pClient->m_MapLayersBackground.EnvelopeUpdate();
-		m_pClient->m_MapLayersForeground.EnvelopeUpdate();
 		if(!DemoPlayer()->BaseInfo()->m_Paused && PositionToSeek == 1.0f)
 			DemoPlayer()->Pause();
 	}
@@ -102,8 +101,6 @@ void CMenus::DemoSeekTick(IDemoPlayer::ETickOffset TickOffset)
 	DemoPlayer()->SeekTick(TickOffset);
 	m_pClient->m_SuppressEvents = false;
 	DemoPlayer()->Pause();
-	m_pClient->m_MapLayersBackground.EnvelopeUpdate();
-	m_pClient->m_MapLayersForeground.EnvelopeUpdate();
 }
 
 void CMenus::RenderDemoPlayer(CUIRect MainView)
@@ -169,17 +166,17 @@ void CMenus::RenderDemoPlayer(CUIRect MainView)
 	// handle keyboard shortcuts independent of active menu
 	float PositionToSeek = -1.0f;
 	float TimeToSeek = 0.0f;
-	if(m_pClient->m_GameConsole.IsClosed() && m_DemoPlayerState == DEMOPLAYER_NONE && g_Config.m_ClDemoKeyboardShortcuts && !Ui()->IsPopupOpen())
+	if(!m_pClient->m_GameConsole.IsActive() && m_DemoPlayerState == DEMOPLAYER_NONE && g_Config.m_ClDemoKeyboardShortcuts && !Ui()->IsPopupOpen())
 	{
 		// increase/decrease speed
 		if(!Input()->ModifierIsPressed() && !Input()->ShiftIsPressed() && !Input()->AltIsPressed())
 		{
-			if(Input()->KeyPress(KEY_MOUSE_WHEEL_UP) || Input()->KeyPress(KEY_UP))
+			if(Input()->KeyPress(KEY_UP) || (m_MenuActive && Input()->KeyPress(KEY_MOUSE_WHEEL_UP)))
 			{
 				DemoPlayer()->AdjustSpeedIndex(+1);
 				UpdateLastSpeedChange();
 			}
-			else if(Input()->KeyPress(KEY_MOUSE_WHEEL_DOWN) || Input()->KeyPress(KEY_DOWN))
+			else if(Input()->KeyPress(KEY_DOWN) || (m_MenuActive && Input()->KeyPress(KEY_MOUSE_WHEEL_DOWN)))
 			{
 				DemoPlayer()->AdjustSpeedIndex(-1);
 				UpdateLastSpeedChange();
@@ -461,7 +458,7 @@ void CMenus::RenderDemoPlayer(CUIRect MainView)
 			else
 			{
 				static float s_PrevAmount = 0.0f;
-				float AmountSeek = clamp((Ui()->MouseX() - SeekBar.x - Rounding) / (float)(SeekBar.w - 2 * Rounding), 0.0f, 1.0f);
+				float AmountSeek = clamp((Ui()->MouseX() - SeekBar.x - Rounding) / (SeekBar.w - 2 * Rounding), 0.0f, 1.0f);
 
 				if(Input()->ShiftIsPressed())
 				{
@@ -494,7 +491,7 @@ void CMenus::RenderDemoPlayer(CUIRect MainView)
 
 		if(Ui()->HotItem() == pId)
 		{
-			const int HoveredTick = (int)(clamp((Ui()->MouseX() - SeekBar.x - Rounding) / (float)(SeekBar.w - 2 * Rounding), 0.0f, 1.0f) * TotalTicks);
+			const int HoveredTick = (int)(clamp((Ui()->MouseX() - SeekBar.x - Rounding) / (SeekBar.w - 2 * Rounding), 0.0f, 1.0f) * TotalTicks);
 			static char s_aHoveredTime[32];
 			str_time((int64_t)HoveredTick / Client()->GameTickSpeed() * 100, TIME_HOURS, s_aHoveredTime, sizeof(s_aHoveredTime));
 			GameClient()->m_Tooltips.DoToolTip(pId, &SeekBar, s_aHoveredTime);
@@ -700,7 +697,7 @@ void CMenus::RenderDemoPlayer(CUIRect MainView)
 	// close button
 	ButtonBar.VSplitRight(ButtonbarHeight, &ButtonBar, &Button);
 	static CButtonContainer s_ExitButton;
-	if(DoButton_FontIcon(&s_ExitButton, FONT_ICON_XMARK, 0, &Button) || (Input()->KeyPress(KEY_C) && m_pClient->m_GameConsole.IsClosed() && m_DemoPlayerState == DEMOPLAYER_NONE))
+	if(DoButton_FontIcon(&s_ExitButton, FONT_ICON_XMARK, 0, &Button) || (Input()->KeyPress(KEY_C) && !m_pClient->m_GameConsole.IsActive() && m_DemoPlayerState == DEMOPLAYER_NONE))
 	{
 		Client()->Disconnect();
 		DemolistOnUpdate(false);
@@ -716,6 +713,19 @@ void CMenus::RenderDemoPlayer(CUIRect MainView)
 		g_Config.m_ClDemoKeyboardShortcuts ^= 1;
 	}
 	GameClient()->m_Tooltips.DoToolTip(&s_KeyboardShortcutsButton, &Button, Localize("Toggle keyboard shortcuts"));
+
+	// auto camera button (only available when it is possible to use)
+	if(m_pClient->m_Camera.CanUseAutoSpecCamera())
+	{
+		ButtonBar.VSplitRight(Margins, &ButtonBar, nullptr);
+		ButtonBar.VSplitRight(ButtonbarHeight, &ButtonBar, &Button);
+		static CButtonContainer s_AutoCameraButton;
+		if(DoButton_FontIcon(&s_AutoCameraButton, FONT_ICON_CAMERA, 0, &Button, IGraphics::CORNER_ALL, m_pClient->m_Camera.m_AutoSpecCamera))
+		{
+			m_pClient->m_Camera.m_AutoSpecCamera = !m_pClient->m_Camera.m_AutoSpecCamera;
+		}
+		GameClient()->m_Tooltips.DoToolTip(&s_AutoCameraButton, &Button, Localize("Toggle auto camera"));
+	}
 
 	// demo name
 	char aDemoName[IO_MAX_PATH_LENGTH];
@@ -830,13 +840,15 @@ void CMenus::RenderDemoPlayerSliceSavePopup(CUIRect MainView)
 	static CButtonContainer s_ButtonOk;
 	if(DoButton_Menu(&s_ButtonOk, Localize("Ok"), 0, &OkButton) || (!Ui()->IsPopupOpen() && Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER)))
 	{
+		if(str_endswith(m_DemoSliceInput.GetString(), ".demo"))
+		{
+			char aNameWithoutExt[IO_MAX_PATH_LENGTH];
+			fs_split_file_extension(m_DemoSliceInput.GetString(), aNameWithoutExt, sizeof(aNameWithoutExt));
+			m_DemoSliceInput.Set(aNameWithoutExt);
+		}
+
 		char aDemoName[IO_MAX_PATH_LENGTH];
-		char aNameWithoutExt[IO_MAX_PATH_LENGTH];
 		DemoPlayer()->GetDemoName(aDemoName, sizeof(aDemoName));
-
-		fs_split_file_extension(m_DemoSliceInput.GetString(), aNameWithoutExt, sizeof(aNameWithoutExt));
-		m_DemoSliceInput.Set(aNameWithoutExt);
-
 		if(str_comp(aDemoName, m_DemoSliceInput.GetString()) == 0)
 		{
 			static CUi::SMessagePopupContext s_MessagePopupContext;
@@ -921,7 +933,7 @@ int CMenus::DemolistFetchCallback(const CFsFileInfo *pInfo, int IsDir, int Stora
 
 	if(time_get_nanoseconds() - pSelf->m_DemoPopulateStartTime > 500ms)
 	{
-		pSelf->RenderLoading(Localize("Loading demo files"), "", 0, false);
+		pSelf->RenderLoading(Localize("Loading demo files"), "", 0);
 	}
 
 	return 0;
@@ -1394,22 +1406,10 @@ void CMenus::RenderDemoBrowserButtons(CUIRect ButtonsView, bool WasListboxItemAc
 
 	// quick search
 	{
-		SetIconMode(true);
-		CUIRect DemoSearch, SearchIcon;
+		CUIRect DemoSearch;
 		ButtonBarTop.VSplitLeft(ButtonBarBottom.h * 21.0f, &DemoSearch, &ButtonBarTop);
 		ButtonBarTop.VSplitLeft(ButtonBarTop.h / 2.0f, nullptr, &ButtonBarTop);
-		DemoSearch.VSplitLeft(TextRender()->TextWidth(14.0f, FONT_ICON_MAGNIFYING_GLASS), &SearchIcon, &DemoSearch);
-		DemoSearch.VSplitLeft(5.0f, nullptr, &DemoSearch);
-		Ui()->DoLabel(&SearchIcon, FONT_ICON_MAGNIFYING_GLASS, 14.0f, TEXTALIGN_ML);
-		SetIconMode(false);
-		m_DemoSearchInput.SetEmptyText(Localize("Search"));
-
-		if(Input()->KeyPress(KEY_F) && Input()->ModifierIsPressed())
-		{
-			Ui()->SetActiveItem(&m_DemoSearchInput);
-			m_DemoSearchInput.SelectAll();
-		}
-		if(Ui()->DoClearableEditBox(&m_DemoSearchInput, &DemoSearch, 12.0f))
+		if(Ui()->DoEditBox_Search(&m_DemoSearchInput, &DemoSearch, 14.0f, !Ui()->IsPopupOpen() && !m_pClient->m_GameConsole.IsActive()))
 		{
 			RefreshFilteredDemos();
 			DemolistOnUpdate(false);
@@ -1456,10 +1456,7 @@ void CMenus::RenderDemoBrowserButtons(CUIRect ButtonsView, bool WasListboxItemAc
 		{
 			char aBuf[IO_MAX_PATH_LENGTH];
 			Storage()->GetCompletePath(m_DemolistSelectedIndex >= 0 ? m_vpFilteredDemos[m_DemolistSelectedIndex]->m_StorageType : IStorage::TYPE_SAVE, m_aCurrentDemoFolder[0] == '\0' ? "demos" : m_aCurrentDemoFolder, aBuf, sizeof(aBuf));
-			if(!open_file(aBuf))
-			{
-				dbg_msg("menus", "couldn't open file '%s'", aBuf);
-			}
+			Client()->ViewFile(aBuf);
 		}
 		GameClient()->m_Tooltips.DoToolTip(&s_DemosDirectoryButton, &DemosDirectoryButton, Localize("Open the directory that contains the demo files"));
 	}
@@ -1472,7 +1469,7 @@ void CMenus::RenderDemoBrowserButtons(CUIRect ButtonsView, bool WasListboxItemAc
 		ButtonBarBottom.VSplitRight(ButtonBarBottom.h, &ButtonBarBottom, nullptr);
 		SetIconMode(true);
 		static CButtonContainer s_PlayButton;
-		if(DoButton_Menu(&s_PlayButton, (m_DemolistSelectedIndex >= 0 && m_vpFilteredDemos[m_DemolistSelectedIndex]->m_IsDir) ? FONT_ICON_FOLDER_OPEN : FONT_ICON_PLAY, 0, &PlayButton) || WasListboxItemActivated || Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER) || (Input()->KeyPress(KEY_P) && m_pClient->m_GameConsole.IsClosed() && !m_DemoSearchInput.IsActive()))
+		if(DoButton_Menu(&s_PlayButton, (m_DemolistSelectedIndex >= 0 && m_vpFilteredDemos[m_DemolistSelectedIndex]->m_IsDir) ? FONT_ICON_FOLDER_OPEN : FONT_ICON_PLAY, 0, &PlayButton) || WasListboxItemActivated || Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER) || (Input()->KeyPress(KEY_P) && !m_pClient->m_GameConsole.IsActive() && !m_DemoSearchInput.IsActive()))
 		{
 			SetIconMode(false);
 			if(m_vpFilteredDemos[m_DemolistSelectedIndex]->m_IsDir) // folder
@@ -1561,7 +1558,7 @@ void CMenus::RenderDemoBrowserButtons(CUIRect ButtonsView, bool WasListboxItemAc
 				CUIRect DeleteButton;
 				ButtonBarBottom.VSplitRight(ButtonBarBottom.h * 3.0f, &ButtonBarBottom, &DeleteButton);
 				ButtonBarBottom.VSplitRight(ButtonBarBottom.h / 2.0f, &ButtonBarBottom, nullptr);
-				if(DoButton_Menu(&s_DeleteButton, FONT_ICON_TRASH, 0, &DeleteButton) || Ui()->ConsumeHotkey(CUi::HOTKEY_DELETE) || (Input()->KeyPress(KEY_D) && m_pClient->m_GameConsole.IsClosed() && !m_DemoSearchInput.IsActive()))
+				if(DoButton_Menu(&s_DeleteButton, FONT_ICON_TRASH, 0, &DeleteButton) || Ui()->ConsumeHotkey(CUi::HOTKEY_DELETE) || (Input()->KeyPress(KEY_D) && !m_pClient->m_GameConsole.IsActive() && !m_DemoSearchInput.IsActive()))
 				{
 					SetIconMode(false);
 					char aBuf[128 + IO_MAX_PATH_LENGTH];
@@ -1581,7 +1578,7 @@ void CMenus::RenderDemoBrowserButtons(CUIRect ButtonsView, bool WasListboxItemAc
 				ButtonBarTop.VSplitRight(ButtonBarBottom.h, &ButtonBarTop, nullptr);
 				SetIconMode(true);
 				static CButtonContainer s_RenderButton;
-				if(DoButton_Menu(&s_RenderButton, FONT_ICON_VIDEO, 0, &RenderButton) || (Input()->KeyPress(KEY_R) && m_pClient->m_GameConsole.IsClosed() && !m_DemoSearchInput.IsActive()))
+				if(DoButton_Menu(&s_RenderButton, FONT_ICON_VIDEO, 0, &RenderButton) || (Input()->KeyPress(KEY_R) && !m_pClient->m_GameConsole.IsActive() && !m_DemoSearchInput.IsActive()))
 				{
 					SetIconMode(false);
 					m_Popup = POPUP_RENDER_DEMO;

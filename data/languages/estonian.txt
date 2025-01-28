@@ -6,6 +6,7 @@
 #   Cammodude 2024-10-03 18:04:16
 #   Cammodude 2024-12-04 17:35:38
 #   Cammodude 2024-20-04 15:17:26
+#   Cammodude 2024-18-07 20:00:25
 ##### /authors #####
 
 ##### translated strings #####
@@ -79,8 +80,8 @@ Client
 Connecting to
 == Ühenduse loomine
 
-Connection Problems...
-== Ühenduse Probleemid...
+Connection Problems…
+== Ühenduse Probleemid…
 
 Console
 == Konsool
@@ -279,9 +280,6 @@ Player
 
 Player country:
 == Mängija maa:
-
-Player options
-== Mängija sätted
 
 Players
 == Mängijad
@@ -499,9 +497,6 @@ Your skin
 Reset to defaults
 == Lähtesta vaikeseadetele
 
-Round
-== Raund
-
 Lht.
 == Heledus
 
@@ -712,9 +707,6 @@ Kill
 Pause
 == Paus
 
-Reload
-== Lae uuesti
-
 Deactivate
 == Deaktiveeri
 
@@ -859,9 +851,6 @@ DDNet
 DDNet Client needs to be restarted to complete update!
 == DDNet Klient peab taaskäivitama, et uuendus lõpetada!
 
-Use DDRace Scoreboard
-== Kasuta DDRace punktitabelit
-
 Show score
 == Näita punkte
 
@@ -955,8 +944,8 @@ DDNet %s is available:
 Update now
 == Uuenda nüüd
 
-Updating...
-== Uuendamine...
+Updating…
+== Uuendamine…
 
 DDNet Client updated!
 == DDNet Klient on uuendatud!
@@ -1007,8 +996,8 @@ DDNet %s is out!
 Downloading %s:
 == Allalaadimine %s:
 
-Update failed! Check log...
-== Uuendus ebaõnnestus! Vaata logi...
+Update failed! Check log…
+== Uuendus ebaõnnestus! Vaata logi…
 
 Restart
 == Taaskäivita
@@ -1205,7 +1194,7 @@ Press a key…
 Main menu
 == Peamenüü
 
-Trying to determine UDP connectivity...
+Trying to determine UDP connectivity…
 == UDP-ühenduvuse määramine
 
 UDP seems to be filtered.
@@ -1280,9 +1269,6 @@ Copy info
 No server selected
 == Serverit pole valitud
 
-Online players (%d)
-== Võrgus olevaid mängijaid (%d)
-
 Online clanmates (%d)
 == Võrgus olevaid klannikaaslasi (%d)
 
@@ -1298,9 +1284,6 @@ Click to remove this player from your friends list.
 
 Click to remove this clan from your friends list.
 == Klõpsake, et eemaldada see klann oma sõbranimekirjast.
-
-None
-== Mitte ühtegi
 
 Are you sure that you want to remove the player '%s' from your friends list?
 == Kas olete kindel, et soovite eemaldada mängija '%s' oma sõbranimekirjast?
@@ -1610,9 +1593,6 @@ Show local time always
 DDRace HUD
 == DDRace HUD
 
-Show client IDs in scoreboard
-== Näita kliendi ID-eid tulemustabelis
-
 Show DDRace HUD
 == Näita DDRace HUD-i
 
@@ -1654,9 +1634,6 @@ Same clan color in scoreboard
 
 Hook collision line
 == Konksu kokkupõrkejoon
-
-Hook collision line width
-== Konksu kokkupõrkejoone laius
 
 Hook collision line opacity
 == Konksu kokkupõrkejoone läbipaistvus
@@ -1736,7 +1713,7 @@ Overlay entities
 Show text entities
 == Näita teksti üksusi
 
-Adjust the opacity of entities belonging to other teams, such as tees and nameplates
+Adjust the opacity of entities belonging to other teams, such as tees and name plates
 == Seadista teiste tiimide üksuste läbipaistvust, nagu teed ja nimesildid
 
 Show quads
@@ -1846,3 +1823,253 @@ Always show other players' hook collision lines
 
 Net
 == Võrk
+
+[Spectating]
+Following %s
+== %s jälgimine
+
+%d/%d KiB (%.1f KiB/s)
+== %d/%d KiB (%.1f KiB/s)
+
+Example of usage
+== Kasutamise näide
+
+Tee
+== Tee
+
+Show only chat messages from team members
+== Ainult näita sõnumeid tiimi kaaslastelt
+
+Round %d/%d
+== Raund %d/%d
+
+[Spectators]
+%d others…
+== %d teisi…
+
+[Team and size]
+%d\n(%d/%d)
+== %d\n(%d/%d)
+
+Team %d (%d/%d)
+== Tiim %d (%d/%d)
+
+Could not resolve connect address '%s'. See local console for details.
+== 
+
+Connect address error
+== 
+
+Could not connect dummy
+== 
+
+"%s" is not compatible with pnglite and cannot be loaded by old DDNet versions:
+== 
+
+Some fonts could not be loaded. Check the local console for details.
+== 
+
+Loading background map
+== 
+
+[Spectating Camera Mode Icon]
+AUTO
+== 
+
+Save skin
+== 
+
+Are you sure you want to save your skin? If a skin with this name already exists, it will be replaced.
+== 
+
+Unable to save the skin
+== 
+
+Unable to save the skin with a reserved name
+== 
+
+No local servers found (ports %d-%d)
+== 
+
+Online friends (%d)
+== 
+
+Add friends by entering their name below or by clicking their name in the player list.
+== 
+
+Add clanmates by entering their clan below and leaving the name blank.
+== 
+
+Offline friends and clanmates will appear here.
+== 
+
+Toggle auto camera
+== 
+
+Dummy is not allowed on this server
+== 
+
+Please wait…
+== 
+
+Edit touch controls
+== 
+
+Close
+== 
+
+https://wiki.ddnet.org/wiki/Touch_controls
+== 
+
+Save changes
+== 
+
+Error saving touch controls
+== 
+
+Could not save touch controls to file. See local console for details.
+== 
+
+Unsaved changes
+== 
+
+Discard changes
+== 
+
+Are you sure that you want to discard the current changes to the touch controls?
+== 
+
+Are you sure that you want to reset the touch controls to default?
+== 
+
+Import from clipboard
+== 
+
+Are you sure that you want to import the touch controls from the clipboard? This will overwrite your current touch controls.
+== 
+
+Export to clipboard
+== 
+
+Direct touch input while ingame
+== 
+
+[Direct touch input]
+Disabled
+== 
+
+[Direct touch input]
+Active action
+== 
+
+[Direct touch input]
+Aim
+== 
+
+[Direct touch input]
+Fire
+== 
+
+[Direct touch input]
+Hook
+== 
+
+Direct touch input while spectating
+== 
+
+Error loading touch controls
+== 
+
+Could not load touch controls from file. See local console for details.
+== 
+
+Could not load default touch controls from file. See local console for details.
+== 
+
+Could not load touch controls from clipboard. See local console for details.
+== 
+
+[Hertz]
+Hz
+== 
+
+Show client IDs (scoreboard, chat, spectator)
+== 
+
+Show client IDs in name plates
+== 
+
+Hook Strength
+== 
+
+Size of hook strength icon and number indicator
+== 
+
+Key Presses
+== 
+
+Size of key press icons
+== 
+
+Width of your own hook collision line
+== 
+
+Width of others' hook collision line
+== 
+
+Preview 'Hook collisions' being pressed
+== 
+
+Basic
+== 
+
+Custom
+== 
+
+Are you sure that you want to delete '%s'?
+== 
+
+Delete skin
+== 
+
+Unable to delete skin
+== 
+
+Server could not be started. Make sure to grant the notification permission in the app settings so the server can run in the background.
+== 
+
+[skins]
+Body
+== 
+
+[skins]
+Marking
+== 
+
+[skins]
+Decoration
+== 
+
+[skins]
+Hands
+== 
+
+[skins]
+Feet
+== 
+
+[skins]
+Eyes
+== 
+
+Aim
+== 
+
+Active: Fire
+== 
+
+Active: Hook
+== 
+
+https://wiki.ddnet.org/wiki/Mapping
+== 

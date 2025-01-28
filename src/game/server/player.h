@@ -4,9 +4,7 @@
 #define GAME_SERVER_PLAYER_H
 
 #include <base/vmath.h>
-
 #include <engine/shared/protocol.h>
-
 #include <game/alloc.h>
 #include <game/server/save.h>
 
@@ -20,13 +18,6 @@ class CGameContext;
 class IServer;
 struct CNetObj_PlayerInput;
 struct CScorePlayerResult;
-
-enum
-{
-	WEAPON_GAME = -3, // team switching etc
-	WEAPON_SELF = -2, // console kill command
-	WEAPON_WORLD = -1, // death tiles etc
-};
 
 // player object
 class CPlayer
@@ -171,6 +162,7 @@ public:
 	};
 
 	bool m_DND;
+	bool m_Whispers;
 	int64_t m_FirstVoteTick;
 	char m_aTimeoutCode[64];
 
@@ -178,6 +170,7 @@ public:
 	int Pause(int State, bool Force);
 	int ForcePause(int Time);
 	int IsPaused() const;
+	bool CanSpec() const;
 
 	bool IsPlaying() const;
 	int64_t m_Last_KickVote;
@@ -187,6 +180,21 @@ public:
 	vec2 m_ShowDistance;
 	bool m_SpecTeam;
 	bool m_NinjaJetpack;
+
+	// camera info is used sparingly for converting aim target to absolute world coordinates
+	class CCameraInfo
+	{
+		friend class CPlayer;
+		bool m_HasCameraInfo;
+		float m_Zoom;
+		int m_Deadzone;
+		int m_FollowFactor;
+
+	public:
+		vec2 ConvertTargetToWorld(vec2 Position, vec2 Target) const;
+		void Write(const CNetMsg_Cl_CameraInfo *pMsg);
+		void Reset();
+	} m_CameraInfo;
 
 	int m_ChatScore;
 

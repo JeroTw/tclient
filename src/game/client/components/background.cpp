@@ -8,6 +8,7 @@
 
 #include <game/client/gameclient.h>
 #include <game/layers.h>
+#include <game/localization.h>
 
 #include "background.h"
 
@@ -31,6 +32,11 @@ CBackground::~CBackground()
 CBackgroundEngineMap *CBackground::CreateBGMap()
 {
 	return new CBackgroundEngineMap;
+}
+
+const char *CBackground::LoadingTitle() const
+{
+	return Localize("Loading background map");
 }
 
 void CBackground::OnInit()
@@ -73,16 +79,18 @@ void CBackground::LoadBackground()
 		}
 		else if(m_pMap->Load(aBuf))
 		{
-			m_pLayers->InitBackground(m_pMap);
+			m_pLayers->Init(m_pMap, true);
 			NeedImageLoading = true;
 			m_Loaded = true;
 		}
 
 		if(m_Loaded)
 		{
-			CMapLayers::OnMapLoad();
 			if(NeedImageLoading)
+			{
 				m_pImages->LoadBackground(m_pLayers, m_pMap);
+			}
+			CMapLayers::OnMapLoad();
 		}
 	}
 }

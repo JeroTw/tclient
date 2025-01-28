@@ -11,7 +11,11 @@
 
 #include <game/client/component.h>
 #include <game/client/lineinput.h>
+#include <game/client/render.h>
 #include <game/client/skin.h>
+#include <game/generated/protocol7.h>
+
+constexpr auto SAVES_FILE = "ddnet-saves.txt";
 
 class CChat : public CComponent
 {
@@ -39,18 +43,15 @@ class CChat : public CComponent
 		char m_aText[MAX_LINE_LENGTH];
 		bool m_Friend;
 		bool m_Highlighted;
+		std::optional<ColorRGBA> m_CustomColor;
 
 		STextContainerIndex m_TextContainerIndex;
 		int m_QuadContainerIndex;
 
 		char m_aSkinName[std::size(g_Config.m_ClPlayerSkin)];
-		CSkin::SSkinTextures m_RenderSkin;
-		CSkin::SSkinMetrics m_RenderSkinMetrics;
-		bool m_CustomColoredSkin;
-		ColorRGBA m_ColorBody;
-		ColorRGBA m_ColorFeet;
-
 		bool m_HasRenderTee;
+		CTeeRenderInfo m_TeeRenderInfo;
+
 		float m_TextYOffset;
 
 		int m_TimesRepeated;
@@ -137,6 +138,7 @@ class CChat : public CComponent
 	static void ConChat(IConsole::IResult *pResult, void *pUserData);
 	static void ConShowChat(IConsole::IResult *pResult, void *pUserData);
 	static void ConEcho(IConsole::IResult *pResult, void *pUserData);
+	static void ConClearChat(IConsole::IResult *pResult, void *pUserData);
 
 	static void ConchainChatOld(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainChatFontSize(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
@@ -172,6 +174,7 @@ public:
 	void OnInit() override;
 
 	void RebuildChat();
+	void ClearLines();
 
 	void EnsureCoherentFontSize() const;
 	void EnsureCoherentWidth() const;

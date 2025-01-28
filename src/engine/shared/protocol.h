@@ -4,6 +4,7 @@
 #define ENGINE_SHARED_PROTOCOL_H
 
 #include <bitset>
+#include <engine/shared/protocol7.h>
 
 /*
 	Connection diagram - How the initialization works.
@@ -95,6 +96,7 @@ enum
 
 	MAX_NAME_LENGTH = 16,
 	MAX_CLAN_LENGTH = 12,
+	MAX_SKIN_LENGTH = 24,
 
 	// message packing
 	MSGFLAG_VITAL = 1,
@@ -125,6 +127,13 @@ enum
 	VERSION_DDNET_MULTI_LASER = 16040,
 	VERSION_DDNET_ENTITY_NETOBJS = 16200,
 	VERSION_DDNET_REDIRECT = 17020,
+	VERSION_DDNET_PLAYERFLAG_SPEC_CAM = 18090,
+	VERSION_DDNET_RECONNECT = 18090,
+};
+
+enum
+{
+	NUM_TUNEZONES = 256,
 };
 
 typedef std::bitset<MAX_CLIENTS> CClientMask;

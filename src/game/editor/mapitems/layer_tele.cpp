@@ -68,14 +68,14 @@ bool CLayerTele::IsEmpty(const std::shared_ptr<CLayerTiles> &pLayer)
 	return true;
 }
 
-void CLayerTele::BrushDraw(std::shared_ptr<CLayer> pBrush, float wx, float wy)
+void CLayerTele::BrushDraw(std::shared_ptr<CLayer> pBrush, vec2 WorldPos)
 {
 	if(m_Readonly)
 		return;
 
 	std::shared_ptr<CLayerTele> pTeleLayer = std::static_pointer_cast<CLayerTele>(pBrush);
-	int sx = ConvertX(wx);
-	int sy = ConvertY(wy);
+	int sx = ConvertX(WorldPos.x);
+	int sy = ConvertY(WorldPos.y);
 	if(str_comp(pTeleLayer->m_aFileName, m_pEditor->m_aFileName))
 		m_pEditor->m_TeleNumber = pTeleLayer->m_TeleNum;
 
@@ -99,22 +99,15 @@ void CLayerTele::BrushDraw(std::shared_ptr<CLayer> pBrush, float wx, float wy)
 				m_pTeleTile[Index].m_Type,
 				m_pTiles[Index].m_Index};
 
-			if((m_pEditor->m_AllowPlaceUnusedTiles || IsValidTeleTile(pTeleLayer->m_pTiles[y * pTeleLayer->m_Width + x].m_Index)) && pTeleLayer->m_pTiles[y * pTeleLayer->m_Width + x].m_Index != TILE_AIR)
+			unsigned char TgtIndex = pTeleLayer->m_pTiles[y * pTeleLayer->m_Width + x].m_Index;
+			if((m_pEditor->m_AllowPlaceUnusedTiles || IsValidTeleTile(TgtIndex)) && TgtIndex != TILE_AIR)
 			{
-				bool IsCheckpoint = IsTeleTileCheckpoint(pTeleLayer->m_pTiles[y * pTeleLayer->m_Width + x].m_Index);
-				if(!IsCheckpoint && !IsTeleTileNumberUsed(pTeleLayer->m_pTiles[y * pTeleLayer->m_Width + x].m_Index, false))
+				bool IsCheckpoint = IsTeleTileCheckpoint(TgtIndex);
+				if(!IsCheckpoint && !IsTeleTileNumberUsed(TgtIndex, false))
 				{
 					// Tele tile number is unused. Set a known value which is not 0,
 					// as tiles with number 0 would be ignored by previous versions.
 					m_pTeleTile[Index].m_Number = 255;
-				}
-				else if(!IsCheckpoint && m_pEditor->m_TeleNumber != pTeleLayer->m_TeleNum)
-				{
-					m_pTeleTile[Index].m_Number = m_pEditor->m_TeleNumber;
-				}
-				else if(IsCheckpoint && m_pEditor->m_TeleCheckpointNumber != pTeleLayer->m_TeleCheckpointNum)
-				{
-					m_pTeleTile[Index].m_Number = m_pEditor->m_TeleCheckpointNumber;
 				}
 				else if(pTeleLayer->m_pTeleTile[y * pTeleLayer->m_Width + x].m_Number)
 				{

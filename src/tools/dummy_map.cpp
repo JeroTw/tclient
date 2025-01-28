@@ -81,7 +81,6 @@ void CreateEmptyMap(IStorage *pStorage)
 
 	dbg_msg("dummy_map", "dummy map written to '%s'", pMapName);
 
-	CDataFileReader Reader;
 	void *pData;
 	unsigned DataSize;
 	if(!pStorage->ReadFile(pMapName, IStorage::TYPE_ALL, &pData, &DataSize))
@@ -111,7 +110,7 @@ int main(int argc, const char **argv)
 {
 	CCmdlineFix CmdlineFix(&argc, &argv);
 	log_set_global_logger_default();
-	IStorage *pStorage = CreateStorage(IStorage::STORAGETYPE_SERVER, argc, argv);
+	IStorage *pStorage = CreateStorage(IStorage::EInitializationType::SERVER, argc, argv);
 	if(!pStorage)
 		return -1;
 	CreateEmptyMap(pStorage);

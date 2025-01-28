@@ -76,7 +76,7 @@ Client
 Connecting to
 == Повезујем се на
 
-Connection Problems...
+Connection Problems…
 == Проблеми са интернетом
 
 Console
@@ -276,9 +276,6 @@ Player
 
 Player country:
 == Држава играча
-
-Player options
-== Подешавања играча
 
 Players
 == Играчи
@@ -528,9 +525,6 @@ Your skin
 Reset to defaults
 == Ресетуј
 
-Round
-== Рунда
-
 Lht.
 == Светл.
 
@@ -687,9 +681,6 @@ Kill
 Pause
 == Пауза
 
-Reload
-== Освежи
-
 Deactivate
 == Деактивирај
 
@@ -831,9 +822,6 @@ Assets
 DDNet Client needs to be restarted to complete update!
 == Потребно је поново покренути DDNet клијент да бисте довршили ажурирање!
 
-Use DDRace Scoreboard
-== Користи DDRace табелу резултата
-
 Show score
 == Прикажи бодове
 
@@ -924,8 +912,8 @@ DDNet %s is available:
 Update now
 == Унапреди сада
 
-Updating...
-== Унапређујем...
+Updating…
+== Унапређујем…
 
 DDNet Client updated!
 == DDNet клијент је унапређен!
@@ -979,8 +967,8 @@ DDNet %s is out!
 Downloading %s:
 == Преузимање %s:
 
-Update failed! Check log...
-== Ажурирање није успело! Сачекајте log...
+Update failed! Check log…
+== Ажурирање није успело! Сачекајте log…
 
 Restart
 == Поново покрени
@@ -1081,7 +1069,7 @@ Angle:
 Uploading map data to GPU
 == Слање података мапе Г.Ј.О.~у (GPU)
 
-Trying to determine UDP connectivity...
+Trying to determine UDP connectivity…
 == Покушавам да одредим К.Д.П.(UDP) повезаност
 
 UDP seems to be filtered.
@@ -1269,9 +1257,6 @@ Show health, shields and ammo
 DDRace HUD
 == DDRace Приказ
 
-Show client IDs in scoreboard
-== Прикажи идентитете на табли резултата
-
 Show DDRace HUD
 == Прикажи DDRace Приказ
 
@@ -1308,9 +1293,6 @@ Show local player's key presses
 Hook collision line
 == Додир куке
 
-Hook collision line width
-== Дебљина линије за додир куке
-
 Hook collision line opacity
 == Провидност линије за додир куке
 
@@ -1341,7 +1323,7 @@ When you cross the start line, show a ghost tee replicating the movements of you
 Opacity
 == Провидност
 
-Adjust the opacity of entities belonging to other teams, such as tees and nameplates
+Adjust the opacity of entities belonging to other teams, such as tees and name plates
 == Подесите непрозирност ентитета који припадају другим тимовима, као што су мајице и натписне плочице
 
 Quads are used for background decoration
@@ -1428,7 +1410,16 @@ Could not initialize the given graphics backend, reverting to the default backen
 Could not initialize the given graphics backend, this is probably because you didn't install the driver of the integrated graphics card.
 == 
 
+Could not resolve connect address '%s'. See local console for details.
+== 
+
+Connect address error
+== 
+
 Could not save downloaded map. Try manually deleting this file: %s
+== 
+
+Could not connect dummy
 == 
 
 Error playing demo
@@ -1443,7 +1434,13 @@ Saving settings to '%s' failed
 Error saving settings
 == 
 
+"%s" is not compatible with pnglite and cannot be loaded by old DDNet versions:
+== 
+
 Loading demo file from storage
+== 
+
+Some fonts could not be loaded. Check the local console for details.
 == 
 
 Initializing components
@@ -1453,6 +1450,9 @@ Quitting. Please wait…
 == 
 
 Restarting. Please wait…
+== 
+
+Loading background map
 == 
 
 Searching
@@ -1488,6 +1488,14 @@ Loading commands…
 Multi-View
 == 
 
+[Spectating]
+Following %s
+== 
+
+[Spectating Camera Mode Icon]
+AUTO
+== 
+
 Some map images could not be loaded. Check the local console for details.
 == 
 
@@ -1510,6 +1518,12 @@ Render complete
 == 
 
 Are you sure that you want to restart?
+== 
+
+Save skin
+== 
+
+Are you sure you want to save your skin? If a skin with this name already exists, it will be replaced.
 == 
 
 There's an unsaved map in the editor, you might want to save it.
@@ -1539,6 +1553,21 @@ Videos directory
 Video was saved to '%s'
 == 
 
+Unable to save the skin
+== 
+
+Unable to save the skin with a reserved name
+== 
+
+%d/%d KiB (%.1f KiB/s)
+== 
+
+No local servers found (ports %d-%d)
+== 
+
+Example of usage
+== 
+
 No login required
 == 
 
@@ -1551,7 +1580,7 @@ Copy info
 No server selected
 == 
 
-Online players (%d)
+Online friends (%d)
 == 
 
 Online clanmates (%d)
@@ -1570,7 +1599,13 @@ Click to remove this player from your friends list.
 Click to remove this clan from your friends list.
 == 
 
-None
+Add friends by entering their name below or by clicking their name in the player list.
+== 
+
+Add clanmates by entering their clan below and leaving the name blank.
+== 
+
+Offline friends and clanmates will appear here.
 == 
 
 Are you sure that you want to remove the player '%s' from your friends list?
@@ -1647,6 +1682,9 @@ Close the demo player
 Toggle keyboard shortcuts
 == 
 
+Toggle auto camera
+== 
+
 Export demo cut
 == 
 
@@ -1699,6 +1737,89 @@ Unable to delete the demo '%s'
 Unable to delete the folder '%s'. Make sure it's empty first.
 == 
 
+Dummy is not allowed on this server
+== 
+
+Please wait…
+== 
+
+Edit touch controls
+== 
+
+Close
+== 
+
+https://wiki.ddnet.org/wiki/Touch_controls
+== 
+
+Save changes
+== 
+
+Error saving touch controls
+== 
+
+Could not save touch controls to file. See local console for details.
+== 
+
+Unsaved changes
+== 
+
+Discard changes
+== 
+
+Are you sure that you want to discard the current changes to the touch controls?
+== 
+
+Are you sure that you want to reset the touch controls to default?
+== 
+
+Import from clipboard
+== 
+
+Are you sure that you want to import the touch controls from the clipboard? This will overwrite your current touch controls.
+== 
+
+Export to clipboard
+== 
+
+Direct touch input while ingame
+== 
+
+[Direct touch input]
+Disabled
+== 
+
+[Direct touch input]
+Active action
+== 
+
+[Direct touch input]
+Aim
+== 
+
+[Direct touch input]
+Fire
+== 
+
+[Direct touch input]
+Hook
+== 
+
+Direct touch input while spectating
+== 
+
+Error loading touch controls
+== 
+
+Could not load touch controls from file. See local console for details.
+== 
+
+Could not load default touch controls from file. See local console for details.
+== 
+
+Could not load touch controls from clipboard. See local console for details.
+== 
+
 Loading…
 == 
 
@@ -1712,6 +1833,10 @@ Deactivate all
 == 
 
 Menu opened. Press Esc key again to close menu.
+== 
+
+[Hertz]
+Hz
 == 
 
 Save power by lowering refresh rate (higher input latency)
@@ -1753,13 +1878,28 @@ Cancel
 Graphics card
 == 
 
+Tee
+== 
+
 Info Messages
 == 
 
 Show local time always
 == 
 
+Authed name color in scoreboard
+== 
+
+Same clan color in scoreboard
+== 
+
+Show client IDs (scoreboard, chat, spectator)
+== 
+
 Always show chat
+== 
+
+Show only chat messages from team members
 == 
 
 Chat font size
@@ -1771,16 +1911,25 @@ Chat width
 Show friend mark (♥) in name plates
 == 
 
+Show client IDs in name plates
+== 
+
+Hook Strength
+== 
+
 Show hook strength icon indicator
 == 
 
 Show hook strength number indicator
 == 
 
-Authed name color in scoreboard
+Size of hook strength icon and number indicator
 == 
 
-Same clan color in scoreboard
+Key Presses
+== 
+
+Size of key press icons
 == 
 
 Show own player's hook collision line
@@ -1790,6 +1939,15 @@ Always show own player's hook collision line
 == 
 
 Always show other players' hook collision lines
+== 
+
+Width of your own hook collision line
+== 
+
+Width of others' hook collision line
+== 
+
+Preview 'Hook collisions' being pressed
 == 
 
 Show finish messages
@@ -1840,8 +1998,76 @@ Entities background color
 Unregister protocol and file extensions
 == 
 
+Basic
+== 
+
+Custom
+== 
+
+Are you sure that you want to delete '%s'?
+== 
+
+Delete skin
+== 
+
+Unable to delete skin
+== 
+
 Open the directory to add custom assets
 == 
 
+Server could not be started. Make sure to grant the notification permission in the app settings so the server can run in the background.
+== 
+
+Round %d/%d
+== 
+
+[Spectators]
+%d others…
+== 
+
+[Team and size]
+%d\n(%d/%d)
+== 
+
+Team %d (%d/%d)
+== 
+
+[skins]
+Body
+== 
+
+[skins]
+Marking
+== 
+
+[skins]
+Decoration
+== 
+
+[skins]
+Hands
+== 
+
+[skins]
+Feet
+== 
+
+[skins]
+Eyes
+== 
+
+Aim
+== 
+
+Active: Fire
+== 
+
+Active: Hook
+== 
+
 Moved ingame
+== 
+
+https://wiki.ddnet.org/wiki/Mapping
 == 

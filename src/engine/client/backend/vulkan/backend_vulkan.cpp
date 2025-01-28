@@ -218,7 +218,7 @@ class CCommandProcessorFragment_Vulkan : public CCommandProcessorFragment_GLBase
 			else
 			{
 				// check if there is enough space in this instance
-				if(bool(SMemoryHeapQueueElement::SMemoryHeapQueueElementFind{}(*m_Elements.begin(), std::make_pair(AllocSize, AllocAlignment))))
+				if(SMemoryHeapQueueElement::SMemoryHeapQueueElementFind{}(*m_Elements.begin(), std::make_pair(AllocSize, AllocAlignment)))
 				{
 					return false;
 				}
@@ -951,7 +951,7 @@ class CCommandProcessorFragment_Vulkan : public CCommandProcessorFragment_GLBase
 	std::vector<std::vector<std::pair<CTexture, CTexture>>> m_vvFrameDelayedTextTexturesCleanup;
 
 	size_t m_ThreadCount = 1;
-	static constexpr size_t ms_MainThreadIndex = 0;
+	static constexpr size_t MAIN_THREAD_INDEX = 0;
 	size_t m_CurCommandInPipe = 0;
 	size_t m_CurRenderCallCountInPipe = 0;
 	size_t m_CommandsInPipe = 0;
@@ -1263,7 +1263,6 @@ protected:
 	{
 		m_aCommandCallbacks[CommandBufferCMDOff(CCommandBuffer::CMD_TEXTURE_CREATE)] = {false, [](SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand *pBaseCommand) {}, [this](const CCommandBuffer::SCommand *pBaseCommand, SRenderCommandExecuteBuffer &ExecBuffer) { return Cmd_Texture_Create(static_cast<const CCommandBuffer::SCommand_Texture_Create *>(pBaseCommand)); }};
 		m_aCommandCallbacks[CommandBufferCMDOff(CCommandBuffer::CMD_TEXTURE_DESTROY)] = {false, [](SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand *pBaseCommand) {}, [this](const CCommandBuffer::SCommand *pBaseCommand, SRenderCommandExecuteBuffer &ExecBuffer) { return Cmd_Texture_Destroy(static_cast<const CCommandBuffer::SCommand_Texture_Destroy *>(pBaseCommand)); }};
-		m_aCommandCallbacks[CommandBufferCMDOff(CCommandBuffer::CMD_TEXTURE_UPDATE)] = {false, [](SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand *pBaseCommand) {}, [this](const CCommandBuffer::SCommand *pBaseCommand, SRenderCommandExecuteBuffer &ExecBuffer) { return Cmd_Texture_Update(static_cast<const CCommandBuffer::SCommand_Texture_Update *>(pBaseCommand)); }};
 		m_aCommandCallbacks[CommandBufferCMDOff(CCommandBuffer::CMD_TEXT_TEXTURES_CREATE)] = {false, [](SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand *pBaseCommand) {}, [this](const CCommandBuffer::SCommand *pBaseCommand, SRenderCommandExecuteBuffer &ExecBuffer) { return Cmd_TextTextures_Create(static_cast<const CCommandBuffer::SCommand_TextTextures_Create *>(pBaseCommand)); }};
 		m_aCommandCallbacks[CommandBufferCMDOff(CCommandBuffer::CMD_TEXT_TEXTURES_DESTROY)] = {false, [](SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand *pBaseCommand) {}, [this](const CCommandBuffer::SCommand *pBaseCommand, SRenderCommandExecuteBuffer &ExecBuffer) { return Cmd_TextTextures_Destroy(static_cast<const CCommandBuffer::SCommand_TextTextures_Destroy *>(pBaseCommand)); }};
 		m_aCommandCallbacks[CommandBufferCMDOff(CCommandBuffer::CMD_TEXT_TEXTURE_UPDATE)] = {false, [](SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand *pBaseCommand) {}, [this](const CCommandBuffer::SCommand *pBaseCommand, SRenderCommandExecuteBuffer &ExecBuffer) { return Cmd_TextTexture_Update(static_cast<const CCommandBuffer::SCommand_TextTexture_Update *>(pBaseCommand)); }};
@@ -1362,7 +1361,8 @@ protected:
 			VkSubresourceLayout SubResourceLayout;
 			vkGetImageSubresourceLayout(m_VKDevice, m_GetPresentedImgDataHelperImage, &SubResource, &SubResourceLayout);
 
-			vkMapMemory(m_VKDevice, m_GetPresentedImgDataHelperMem.m_Mem, 0, VK_WHOLE_SIZE, 0, (void **)&m_pGetPresentedImgDataHelperMappedMemory);
+			if(vkMapMemory(m_VKDevice, m_GetPresentedImgDataHelperMem.m_Mem, 0, VK_WHOLE_SIZE, 0, (void **)&m_pGetPresentedImgDataHelperMappedMemory) != VK_SUCCESS)
+				return false;
 			m_GetPresentedImgDataHelperMappedLayoutOffset = SubResourceLayout.offset;
 			m_GetPresentedImgDataHelperMappedLayoutPitch = SubResourceLayout.rowPitch;
 			m_pGetPresentedImgDataHelperMappedMemory += m_GetPresentedImgDataHelperMappedLayoutOffset;
@@ -1509,8 +1509,9 @@ protected:
 			vkInvalidateMappedMemoryRanges(m_VKDevice, 1, &MemRange);
 
 			size_t RealFullImageSize = maximum(ImageTotalSize, (size_t)(Height * m_GetPresentedImgDataHelperMappedLayoutPitch));
-			if(vDstData.size() < RealFullImageSize)
-				vDstData.resize(RealFullImageSize);
+			size_t ExtraRowSize = Width * 4;
+			if(vDstData.size() < RealFullImageSize + ExtraRowSize)
+				vDstData.resize(RealFullImageSize + ExtraRowSize);
 
 			mem_copy(vDstData.data(), pResImageData, RealFullImageSize);
 
@@ -1521,7 +1522,8 @@ protected:
 				{
 					size_t OffsetImagePacked = (Y * Width * 4);
 					size_t OffsetImageUnpacked = (Y * m_GetPresentedImgDataHelperMappedLayoutPitch);
-					mem_copy(vDstData.data() + OffsetImagePacked, vDstData.data() + OffsetImageUnpacked, Width * 4);
+					mem_copy(vDstData.data() + RealFullImageSize, vDstData.data() + OffsetImageUnpacked, Width * 4);
+					mem_copy(vDstData.data() + OffsetImagePacked, vDstData.data() + RealFullImageSize, Width * 4);
 				}
 			}
 
@@ -1693,7 +1695,8 @@ protected:
 			void *pMapData = nullptr;
 			if(RequiresMapping)
 			{
-				vkMapMemory(m_VKDevice, TmpBufferMemory.m_Mem, 0, VK_WHOLE_SIZE, 0, &pMapData);
+				if(vkMapMemory(m_VKDevice, TmpBufferMemory.m_Mem, 0, VK_WHOLE_SIZE, 0, &pMapData) != VK_SUCCESS)
+					return false;
 				mem_copy(pMapData, pBufferData, static_cast<size_t>(RequiredSize));
 			}
 
@@ -1984,7 +1987,7 @@ protected:
 
 			if(IsVerbose())
 			{
-				VerboseDeallocatedMemory(BufferMem.m_Size, (size_t)ImageIndex, BufferMem.m_UsageType);
+				VerboseDeallocatedMemory(BufferMem.m_Size, ImageIndex, BufferMem.m_UsageType);
 			}
 
 			BufferMem.m_Mem = VK_NULL_HANDLE;
@@ -2081,7 +2084,7 @@ protected:
 			m_pStagingMemoryUsage->store(m_pStagingMemoryUsage->load(std::memory_order_relaxed) - FreeedMemory, std::memory_order_relaxed);
 			if(IsVerbose())
 			{
-				dbg_msg("vulkan", "deallocated chunks of memory with size: %" PRIzu " from all frames (staging buffer)", (size_t)FreeedMemory);
+				dbg_msg("vulkan", "deallocated chunks of memory with size: %" PRIzu " from all frames (staging buffer)", FreeedMemory);
 			}
 		}
 		FreeedMemory = 0;
@@ -2091,7 +2094,7 @@ protected:
 			m_pBufferMemoryUsage->store(m_pBufferMemoryUsage->load(std::memory_order_relaxed) - FreeedMemory, std::memory_order_relaxed);
 			if(IsVerbose())
 			{
-				dbg_msg("vulkan", "deallocated chunks of memory with size: %" PRIzu " from all frames (buffer)", (size_t)FreeedMemory);
+				dbg_msg("vulkan", "deallocated chunks of memory with size: %" PRIzu " from all frames (buffer)", FreeedMemory);
 			}
 		}
 		FreeedMemory = 0;
@@ -2102,7 +2105,7 @@ protected:
 			m_pTextureMemoryUsage->store(m_pTextureMemoryUsage->load(std::memory_order_relaxed) - FreeedMemory, std::memory_order_relaxed);
 			if(IsVerbose())
 			{
-				dbg_msg("vulkan", "deallocated chunks of memory with size: %" PRIzu " from all frames (texture)", (size_t)FreeedMemory);
+				dbg_msg("vulkan", "deallocated chunks of memory with size: %" PRIzu " from all frames (texture)", FreeedMemory);
 			}
 		}
 	}
@@ -3102,7 +3105,7 @@ protected:
 		else
 		{
 			SDeviceMemoryBlock VertexBufferMemory;
-			if(!CreateStreamVertexBuffer(ms_MainThreadIndex, VertexBuffer, VertexBufferMemory, BufferOffset, pUploadData, BufferDataSize))
+			if(!CreateStreamVertexBuffer(MAIN_THREAD_INDEX, VertexBuffer, VertexBufferMemory, BufferOffset, pUploadData, BufferDataSize))
 				return false;
 		}
 		BufferObject.m_IsStreamedBuffer = IsOneFrameBuffer;
@@ -3285,7 +3288,7 @@ protected:
 			else
 			{
 				Scissor.offset = {0, 0};
-				Scissor.extent = {(uint32_t)ScissorViewport.width, (uint32_t)ScissorViewport.height};
+				Scissor.extent = {ScissorViewport.width, ScissorViewport.height};
 			}
 
 			// if there is a dynamic viewport make sure the scissor data is scaled down to that
@@ -3401,7 +3404,7 @@ protected:
 		vkCmdPushConstants(CommandBuffer, PipeLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, VertexPushConstantSize, &VertexPushConstants);
 		vkCmdPushConstants(CommandBuffer, PipeLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(SUniformTileGPosBorder) + sizeof(SUniformTileGVertColorAlign), FragPushConstantSize, &FragPushConstants);
 
-		size_t DrawCount = (size_t)IndicesDrawNum;
+		size_t DrawCount = IndicesDrawNum;
 		vkCmdBindIndexBuffer(CommandBuffer, ExecBuffer.m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 		for(size_t i = 0; i < DrawCount; ++i)
 		{
@@ -3573,6 +3576,22 @@ public:
 		return true;
 	}
 
+	bool IsGpuDenied(uint32_t Vendor, uint32_t DriverVersion, uint32_t ApiMajor, uint32_t ApiMinor, uint32_t ApiPatch)
+	{
+#ifdef CONF_FAMILY_WINDOWS
+		// AMD
+		if(0x1002 == Vendor)
+		{
+			auto Major = (DriverVersion >> 22);
+			auto Minor = (DriverVersion >> 12) & 0x3ff;
+			auto Patch = DriverVersion & 0xfff;
+
+			return Major == 2 && Minor == 0 && Patch > 137 && Patch < 220 && ((ApiMajor <= 1 && ApiMinor < 3) || (ApiMajor <= 1 && ApiMinor == 3 && ApiPatch < 206));
+		}
+#endif
+		return false;
+	}
+
 	[[nodiscard]] bool CreateVulkanInstance(const std::vector<std::string> &vVKLayers, const std::vector<std::string> &vVKExtensions, bool TryDebugExtensions)
 	{
 		std::vector<const char *> vLayersCStr;
@@ -3730,12 +3749,12 @@ public:
 		m_pGpuList->m_vGpus.reserve(vDeviceList.size());
 
 		size_t FoundDeviceIndex = 0;
-		size_t FoundGpuType = STWGraphicGpu::ETWGraphicsGpuType::GRAPHICS_GPU_TYPE_INVALID;
 
 		STWGraphicGpu::ETWGraphicsGpuType AutoGpuType = STWGraphicGpu::ETWGraphicsGpuType::GRAPHICS_GPU_TYPE_INVALID;
 
 		bool IsAutoGpu = str_comp(g_Config.m_GfxGpuName, "auto") == 0;
 
+		bool UserSelectedGpuChosen = false;
 		for(auto &CurDevice : vDeviceList)
 		{
 			vkGetPhysicalDeviceProperties(CurDevice, &(vDevicePropList[Index]));
@@ -3744,40 +3763,53 @@ public:
 
 			STWGraphicGpu::ETWGraphicsGpuType GPUType = VKGPUTypeToGraphicsGpuType(DeviceProp.deviceType);
 
-			STWGraphicGpu::STWGraphicGpuItem NewGpu;
-			str_copy(NewGpu.m_aName, DeviceProp.deviceName);
-			NewGpu.m_GpuType = GPUType;
-			m_pGpuList->m_vGpus.push_back(NewGpu);
+			int DevApiMajor = (int)VK_API_VERSION_MAJOR(DeviceProp.apiVersion);
+			int DevApiMinor = (int)VK_API_VERSION_MINOR(DeviceProp.apiVersion);
+			int DevApiPatch = (int)VK_API_VERSION_PATCH(DeviceProp.apiVersion);
 
+			auto IsDenied = CCommandProcessorFragment_Vulkan::IsGpuDenied(DeviceProp.vendorID, DeviceProp.driverVersion, DevApiMajor, DevApiMinor, DevApiPatch);
+			if((DevApiMajor > gs_BackendVulkanMajor || (DevApiMajor == gs_BackendVulkanMajor && DevApiMinor >= gs_BackendVulkanMinor)) && !IsDenied)
+			{
+				STWGraphicGpu::STWGraphicGpuItem NewGpu;
+				str_copy(NewGpu.m_aName, DeviceProp.deviceName);
+				NewGpu.m_GpuType = GPUType;
+				m_pGpuList->m_vGpus.push_back(NewGpu);
+
+				// We always decide what the 'auto' GPU would be, even if user is forcing a GPU by name in config
+				// Reminder: A worse GPU enumeration has a higher value than a better GPU enumeration, thus the '>'
+				if(AutoGpuType > STWGraphicGpu::ETWGraphicsGpuType::GRAPHICS_GPU_TYPE_INTEGRATED)
+				{
+					str_copy(m_pGpuList->m_AutoGpu.m_aName, DeviceProp.deviceName);
+					m_pGpuList->m_AutoGpu.m_GpuType = GPUType;
+
+					AutoGpuType = GPUType;
+
+					if(IsAutoGpu)
+						FoundDeviceIndex = Index;
+				}
+				// We only select the first GPU that matches, because it comes first in the enumeration array, it's preferred by the system
+				// Reminder: We can't break the cycle here if the name matches because we need to choose the best GPU for 'auto' mode
+				if(!IsAutoGpu && !UserSelectedGpuChosen && str_comp(DeviceProp.deviceName, g_Config.m_GfxGpuName) == 0)
+				{
+					FoundDeviceIndex = Index;
+					UserSelectedGpuChosen = true;
+				}
+			}
 			Index++;
-
-			int DevAPIMajor = (int)VK_API_VERSION_MAJOR(DeviceProp.apiVersion);
-			int DevAPIMinor = (int)VK_API_VERSION_MINOR(DeviceProp.apiVersion);
-
-			if(GPUType < AutoGpuType && (DevAPIMajor > gs_BackendVulkanMajor || (DevAPIMajor == gs_BackendVulkanMajor && DevAPIMinor >= gs_BackendVulkanMinor)))
-			{
-				str_copy(m_pGpuList->m_AutoGpu.m_aName, DeviceProp.deviceName);
-				m_pGpuList->m_AutoGpu.m_GpuType = GPUType;
-
-				AutoGpuType = GPUType;
-			}
-
-			if(((IsAutoGpu && (FoundGpuType > STWGraphicGpu::ETWGraphicsGpuType::GRAPHICS_GPU_TYPE_INTEGRATED && GPUType < FoundGpuType)) || str_comp(DeviceProp.deviceName, g_Config.m_GfxGpuName) == 0) && (DevAPIMajor > gs_BackendVulkanMajor || (DevAPIMajor == gs_BackendVulkanMajor && DevAPIMinor >= gs_BackendVulkanMinor)))
-			{
-				FoundDeviceIndex = Index;
-				FoundGpuType = GPUType;
-			}
 		}
 
-		if(FoundDeviceIndex == 0)
-			FoundDeviceIndex = 1;
+		if(m_pGpuList->m_vGpus.empty())
+		{
+			dbg_msg("vulkan", "no devices with required vulkan version found.");
+			return false;
+		}
 
 		{
-			auto &DeviceProp = vDevicePropList[FoundDeviceIndex - 1];
+			auto &DeviceProp = vDevicePropList[FoundDeviceIndex];
 
-			int DevAPIMajor = (int)VK_API_VERSION_MAJOR(DeviceProp.apiVersion);
-			int DevAPIMinor = (int)VK_API_VERSION_MINOR(DeviceProp.apiVersion);
-			int DevAPIPatch = (int)VK_API_VERSION_PATCH(DeviceProp.apiVersion);
+			int DevApiMajor = (int)VK_API_VERSION_MAJOR(DeviceProp.apiVersion);
+			int DevApiMinor = (int)VK_API_VERSION_MINOR(DeviceProp.apiVersion);
+			int DevApiPatch = (int)VK_API_VERSION_PATCH(DeviceProp.apiVersion);
 
 			str_copy(pRendererName, DeviceProp.deviceName, gs_GpuInfoStringSize);
 			const char *pVendorNameStr = NULL;
@@ -3815,7 +3847,7 @@ public:
 
 			char aBuff[256];
 			str_copy(pVendorName, pVendorNameStr, gs_GpuInfoStringSize);
-			str_format(pVersionName, gs_GpuInfoStringSize, "Vulkan %d.%d.%d (driver: %s)", DevAPIMajor, DevAPIMinor, DevAPIPatch, GetDriverVerson(aBuff, DeviceProp.driverVersion, DeviceProp.vendorID));
+			str_format(pVersionName, gs_GpuInfoStringSize, "Vulkan %d.%d.%d (driver: %s)", DevApiMajor, DevApiMinor, DevApiPatch, GetDriverVerson(aBuff, DeviceProp.driverVersion, DeviceProp.vendorID));
 
 			// get important device limits
 			m_NonCoherentMemAlignment = DeviceProp.limits.nonCoherentAtomSize;
@@ -3833,7 +3865,7 @@ public:
 			}
 		}
 
-		VkPhysicalDevice CurDevice = vDeviceList[FoundDeviceIndex - 1];
+		VkPhysicalDevice CurDevice = vDeviceList[FoundDeviceIndex];
 
 		uint32_t FamQueueCount = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(CurDevice, &FamQueueCount, nullptr);
@@ -6309,7 +6341,8 @@ public:
 				return false;
 
 			void *pMappedData = nullptr;
-			vkMapMemory(m_VKDevice, StreamBufferMemory.m_Mem, 0, VK_WHOLE_SIZE, 0, &pMappedData);
+			if(vkMapMemory(m_VKDevice, StreamBufferMemory.m_Mem, 0, VK_WHOLE_SIZE, 0, &pMappedData) != VK_SUCCESS)
+				return false;
 
 			size_t NewBufferIndex = StreamUniformBuffer.GetBuffers(m_CurImageIndex).size();
 			for(size_t i = 0; i < BufferCreateCount; ++i)
@@ -6332,8 +6365,16 @@ public:
 			StreamUniformBuffer.IncreaseUsedCount(m_CurImageIndex);
 		}
 
+		// Offset here is the offset in the buffer
+		if(BufferMem.m_Size - Offset < DataSize)
 		{
-			mem_copy(pMem + Offset, pData, (size_t)DataSize);
+			SetError(EGfxErrorType::GFX_ERROR_TYPE_OUT_OF_MEMORY_BUFFER, "Stream buffers are limited to CCommandBuffer::MAX_VERTICES. Exceeding it is a bug in the high level code.",
+				GetMemoryUsageShort());
+			return false;
+		}
+
+		{
+			mem_copy(pMem + Offset, pData, DataSize);
 		}
 
 		NewBuffer = Buffer;
@@ -6616,19 +6657,6 @@ public:
 		DestroyIndexBuffer(m_RenderIndexBuffer, m_RenderIndexBufferMemory);
 
 		CleanupVulkan<true>(m_SwapChainImageCount);
-
-		return true;
-	}
-
-	[[nodiscard]] bool Cmd_Texture_Update(const CCommandBuffer::SCommand_Texture_Update *pCommand)
-	{
-		size_t IndexTex = pCommand->m_Slot;
-		uint8_t *pData = pCommand->m_pData;
-
-		if(!UpdateTexture(IndexTex, VK_FORMAT_B8G8R8A8_UNORM, pData, pCommand->m_X, pCommand->m_Y, pCommand->m_Width, pCommand->m_Height))
-			return false;
-
-		free(pData);
 
 		return true;
 	}

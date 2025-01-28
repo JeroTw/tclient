@@ -79,8 +79,8 @@ Client
 Connecting to
 == Yhdistetään
 
-Connection Problems...
-== Yhteysongelmia...
+Connection Problems…
+== Yhteysongelmia…
 
 Console
 == Konsoli
@@ -279,9 +279,6 @@ Player
 
 Player country:
 == Pelaajan maa:
-
-Player options
-== Pelaajavalinnat
 
 Players
 == Pelaajat
@@ -499,9 +496,6 @@ Your skin
 Reset to defaults
 == Palaa oletusasetuksiin
 
-Round
-== Kierros
-
 Lht.
 == Valoisuus
 
@@ -712,9 +706,6 @@ Kill
 Pause
 == Pysäytä
 
-Reload
-== Päivitä
-
 Deactivate
 == Deaktivoi
 
@@ -859,9 +850,6 @@ DDNet
 DDNet Client needs to be restarted to complete update!
 == DDNet-asiakas täytyy käynnistää uudelleen latauksen viimeistelemiseksi
 
-Use DDRace Scoreboard
-== Käytä DDRacen tuloslistaa
-
 Show score
 == Näytä pistemäärä
 
@@ -955,8 +943,8 @@ DDNet %s is available:
 Update now
 == Päivitä nyt
 
-Updating...
-== Päivitetään...
+Updating…
+== Päivitetään…
 
 DDNet Client updated!
 == DDNet-asiakas on päivitetty!
@@ -1007,8 +995,8 @@ DDNet %s is out!
 Downloading %s:
 == Päivitetään %s:
 
-Update failed! Check log...
-== Päivitys epäonnistui! Katso loki...
+Update failed! Check log…
+== Päivitys epäonnistui! Katso loki…
 
 Restart
 == Uudelleenaloitus
@@ -1173,7 +1161,7 @@ Following
 == Seurataan
 
 Loading commands…
-== Ladataan komentoja...
+== Ladataan komentoja…
 
 Position:
 == Positio:
@@ -1203,13 +1191,13 @@ Loading menu themes
 == Ladataan valikon teemoja
 
 Press a key…
-== Paina näppäintä...
+== Paina näppäintä…
 
 Main menu
 == Päävalikko
 
-Trying to determine UDP connectivity...
-== Yritetään selvittää UDP-yhteyden toimivuutta...
+Trying to determine UDP connectivity…
+== Yritetään selvittää UDP-yhteyden toimivuutta…
 
 UDP seems to be filtered.
 == UDP näyttää olevan suodatettu.
@@ -1283,9 +1271,6 @@ Copy info
 No server selected
 == Palvelinta ei ole valittu
 
-Online players (%d)
-== Online pelaajat (%d)
-
 Online clanmates (%d)
 == Online klaanikaverit (%d)
 
@@ -1301,9 +1286,6 @@ Click to remove this player from your friends list.
 
 Click to remove this clan from your friends list.
 == Klikkaa poistaaksesi tämän klaanin ystävälistaltasi.
-
-None
-== Ei mitään
 
 Are you sure that you want to remove the player '%s' from your friends list?
 == Oletko varma että haluat poistaa pelaajan '%s' ystävälistaltasi?
@@ -1435,7 +1417,7 @@ Unable to delete the folder '%s'. Make sure it's empty first.
 == Ei voitu poistaa kansiota '%s'. Varmista että se on tyhjä ensin.
 
 Loading…
-== Ladataan...
+== Ladataan…
 
 Loading ghost files
 == Ladataan aave-tiedostoja
@@ -1502,9 +1484,6 @@ No login required
 
 Player info change cooldown
 == Pelaajan tiedon muutos viive
-
-Converse
-== 
 
 Always show chat
 == Aina näytä chatti
@@ -1643,9 +1622,6 @@ Show local time always
 DDRace HUD
 == DDrace-HUD
 
-Show client IDs in scoreboard
-== Näytä asiakas-ID:t pistetaulukossa
-
 Show DDRace HUD
 == Näytä DDRace-HUD
 
@@ -1676,9 +1652,6 @@ Chat font size
 Chat width
 == Chatin leveys
 
-Show hook strength indicator
-== Näytä koukun voimakkuus mittari
-
 Show local player's key presses
 == Näytä paikallisen pelaajan näppäimistönpainallukset
 
@@ -1690,9 +1663,6 @@ Same clan color in scoreboard
 
 Hook collision line
 == Koukku törmäysviiva
-
-Hook collision line width
-== Koukku törmäysviivan paksuus
 
 Hook collision line opacity
 == Koukku törmäysviivan läpinäkyvyys
@@ -1772,7 +1742,7 @@ Overlay entities
 Show text entities
 == Näytä teksti-entiteettejä
 
-Adjust the opacity of entities belonging to other teams, such as tees and nameplates
+Adjust the opacity of entities belonging to other teams, such as tees and name plates
 == Säädä muiden joukkueiden entiteettien, kuten teen ja nimilaattojen, läpinäkyvyyttä
 
 Show quads
@@ -1841,11 +1811,264 @@ Auto
 Loading sound files
 == Ladataan ääni tiedostoja
 
+Moved ingame
+== Liikui pelissä
+
+Could not resolve connect address '%s'. See local console for details.
+== 
+
+Connect address error
+== 
+
+Could not connect dummy
+== 
+
+"%s" is not compatible with pnglite and cannot be loaded by old DDNet versions:
+== 
+
+Some fonts could not be loaded. Check the local console for details.
+== 
+
+Loading background map
+== 
+
+[Spectating]
+Following %s
+== 
+
+[Spectating Camera Mode Icon]
+AUTO
+== 
+
+Save skin
+== 
+
+Are you sure you want to save your skin? If a skin with this name already exists, it will be replaced.
+== 
+
+Unable to save the skin
+== 
+
+Unable to save the skin with a reserved name
+== 
+
+%d/%d KiB (%.1f KiB/s)
+== 
+
+No local servers found (ports %d-%d)
+== 
+
+Example of usage
+== 
+
+Online friends (%d)
+== 
+
+Add friends by entering their name below or by clicking their name in the player list.
+== 
+
+Add clanmates by entering their clan below and leaving the name blank.
+== 
+
+Offline friends and clanmates will appear here.
+== 
+
+Toggle auto camera
+== 
+
+Dummy is not allowed on this server
+== 
+
+Please wait…
+== 
+
+Edit touch controls
+== 
+
+Close
+== 
+
+https://wiki.ddnet.org/wiki/Touch_controls
+== 
+
+Save changes
+== 
+
+Error saving touch controls
+== 
+
+Could not save touch controls to file. See local console for details.
+== 
+
+Unsaved changes
+== 
+
+Discard changes
+== 
+
+Are you sure that you want to discard the current changes to the touch controls?
+== 
+
+Are you sure that you want to reset the touch controls to default?
+== 
+
+Import from clipboard
+== 
+
+Are you sure that you want to import the touch controls from the clipboard? This will overwrite your current touch controls.
+== 
+
+Export to clipboard
+== 
+
+Direct touch input while ingame
+== 
+
+[Direct touch input]
+Disabled
+== 
+
+[Direct touch input]
+Active action
+== 
+
+[Direct touch input]
+Aim
+== 
+
+[Direct touch input]
+Fire
+== 
+
+[Direct touch input]
+Hook
+== 
+
+Direct touch input while spectating
+== 
+
+Error loading touch controls
+== 
+
+Could not load touch controls from file. See local console for details.
+== 
+
+Could not load default touch controls from file. See local console for details.
+== 
+
+Could not load touch controls from clipboard. See local console for details.
+== 
+
+[Hertz]
+Hz
+== 
+
+Converse
+== 
+
+Tee
+== 
+
+Show client IDs (scoreboard, chat, spectator)
+== 
+
+Show only chat messages from team members
+== 
+
+Show client IDs in name plates
+== 
+
+Hook Strength
+== 
+
+Size of hook strength icon and number indicator
+== 
+
+Key Presses
+== 
+
+Size of key press icons
+== 
+
+Width of your own hook collision line
+== 
+
+Width of others' hook collision line
+== 
+
+Preview 'Hook collisions' being pressed
+== 
+
+Basic
+== 
+
+Custom
+== 
+
+Are you sure that you want to delete '%s'?
+== 
+
+Delete skin
+== 
+
+Unable to delete skin
+== 
+
+Server could not be started. Make sure to grant the notification permission in the app settings so the server can run in the background.
+== 
+
+Round %d/%d
+== 
+
+[Spectators]
+%d others…
+== 
+
+[Team and size]
+%d\n(%d/%d)
+== 
+
+Team %d (%d/%d)
+== 
+
+[skins]
+Body
+== 
+
+[skins]
+Marking
+== 
+
+[skins]
+Decoration
+== 
+
+[skins]
+Hands
+== 
+
+[skins]
+Feet
+== 
+
+[skins]
+Eyes
+== 
+
 Spree
 == 
 
 Grabs
 == 
 
-Moved ingame
-== Liikui pelissä
+Aim
+== 
+
+Active: Fire
+== 
+
+Active: Hook
+== 
+
+https://wiki.ddnet.org/wiki/Mapping
+== 

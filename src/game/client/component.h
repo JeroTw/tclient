@@ -104,25 +104,12 @@ protected:
 	class IUpdater *Updater() const;
 #endif
 
-#if defined(CONF_VIDEORECORDER)
 	/**
 	 * Gets the current time.
 	 * @see time_get()
 	 */
-	int64_t time() const
-	{
-		return IVideo::Current() ? IVideo::Time() : time_get();
-	}
-#else
-	/**
-	 * Gets the current time.
-	 * @see time_get()
-	 */
-	int64_t time() const
-	{
-		return time_get();
-	}
-#endif
+	int64_t time() const;
+
 	/**
 	 * Gets the local time.
 	 */
@@ -225,6 +212,14 @@ public:
 	 * @param Event The input event.
 	 */
 	virtual bool OnInput(const IInput::CEvent &Event) { return false; }
+	/**
+	 * Called with all current touch finger states.
+	 *
+	 * @param vTouchFingerStates The touch finger states to be handled.
+	 *
+	 * @return `true` if the component used the touch events, `false` otherwise
+	 */
+	virtual bool OnTouchState(const std::vector<IInput::CTouchFingerState> &vTouchFingerStates) { return false; }
 };
 
 #endif

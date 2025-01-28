@@ -66,6 +66,7 @@ CMenuBackground::CMenuBackground() :
 	m_MoveTime = 0.0f;
 
 	m_IsInit = false;
+	m_Loading = false;
 }
 
 CBackgroundEngineMap *CMenuBackground::CreateBGMap()
@@ -159,7 +160,7 @@ int CMenuBackground::ThemeScan(const char *pName, int IsDir, int DirType, void *
 
 	if(time_get_nanoseconds() - pSelf->m_ThemeScanStartTime > 500ms)
 	{
-		pSelf->GameClient()->m_Menus.RenderLoading(Localize("Loading menu themes"), "", 0, false);
+		pSelf->GameClient()->m_Menus.RenderLoading(Localize("Loading menu themes"), "", 0);
 	}
 	return 0;
 }
@@ -183,6 +184,8 @@ void CMenuBackground::LoadMenuBackground(bool HasDayHint, bool HasNightHint)
 
 	if(g_Config.m_ClMenuMap[0] != '\0')
 	{
+		m_Loading = true;
+
 		const char *pMenuMap = g_Config.m_ClMenuMap;
 		if(str_comp(pMenuMap, "auto") == 0)
 		{
@@ -254,10 +257,10 @@ void CMenuBackground::LoadMenuBackground(bool HasDayHint, bool HasNightHint)
 
 		if(m_Loaded)
 		{
-			m_pLayers->InitBackground(m_pMap);
+			m_pLayers->Init(m_pMap, true);
 
-			CMapLayers::OnMapLoad();
 			m_pImages->LoadBackground(m_pLayers, m_pMap);
+			CMapLayers::OnMapLoad();
 
 			// look for custom positions
 			CMapItemLayerTilemap *pTLayer = m_pLayers->GameLayer();
@@ -287,6 +290,7 @@ void CMenuBackground::LoadMenuBackground(bool HasDayHint, bool HasNightHint)
 				}
 			}
 		}
+		m_Loading = false;
 	}
 }
 
@@ -307,15 +311,14 @@ bool CMenuBackground::Render()
 		return false;
 
 	m_Camera.m_Zoom = 0.7f;
-	static vec2 Dir = vec2(1.0f, 0.0f);
 
 	float DistToCenter = distance(m_Camera.m_Center, m_RotationCenter);
 	if(!m_ChangedPosition && absolute(DistToCenter - (float)g_Config.m_ClRotationRadius) <= 0.5f)
 	{
 		// do little rotation
 		float RotPerTick = 360.0f / (float)g_Config.m_ClRotationSpeed * clamp(Client()->RenderFrameTime(), 0.0f, 0.1f);
-		Dir = rotate(Dir, RotPerTick);
-		m_Camera.m_Center = m_RotationCenter + Dir * (float)g_Config.m_ClRotationRadius;
+		m_CurrentDirection = rotate(m_CurrentDirection, RotPerTick);
+		m_Camera.m_Center = m_RotationCenter + m_CurrentDirection * (float)g_Config.m_ClRotationRadius;
 	}
 	else
 	{
@@ -328,16 +331,16 @@ bool CMenuBackground::Render()
 		vec2 TargetPos = m_RotationCenter + DirToCenter * (float)g_Config.m_ClRotationRadius;
 		float Distance = distance(m_AnimationStartPos, TargetPos);
 		if(Distance > 0.001f)
-			Dir = normalize(m_AnimationStartPos - TargetPos);
+			m_CurrentDirection = normalize(m_AnimationStartPos - TargetPos);
 		else
-			Dir = vec2(1, 0);
+			m_CurrentDirection = vec2(1.0f, 0.0f);
 
 		// move time
 		m_MoveTime += clamp(Client()->RenderFrameTime(), 0.0f, 0.1f) * g_Config.m_ClCameraSpeed / 10.0f;
 		float XVal = 1 - m_MoveTime;
 		XVal = std::pow(XVal, 7.0f);
 
-		m_Camera.m_Center = TargetPos + Dir * (XVal * Distance);
+		m_Camera.m_Center = TargetPos + m_CurrentDirection * (XVal * Distance);
 		if(m_CurrentPosition < 0)
 		{
 			m_AnimationStartPos = m_Camera.m_Center;
@@ -357,6 +360,11 @@ bool CMenuBackground::Render()
 CCamera *CMenuBackground::GetCurCamera()
 {
 	return &m_Camera;
+}
+
+const char *CMenuBackground::LoadingTitle() const
+{
+	return Localize("Loading background map");
 }
 
 void CMenuBackground::ChangePosition(int PositionNumber)

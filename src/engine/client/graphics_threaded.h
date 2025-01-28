@@ -2,10 +2,13 @@
 #define ENGINE_CLIENT_GRAPHICS_THREADED_H
 
 #include <base/system.h>
+
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
 
+#include <atomic>
 #include <cstddef>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -93,7 +96,6 @@ public:
 		// texture commands
 		CMD_TEXTURE_CREATE,
 		CMD_TEXTURE_DESTROY,
-		CMD_TEXTURE_UPDATE,
 		CMD_TEXT_TEXTURES_CREATE,
 		CMD_TEXT_TEXTURES_DESTROY,
 		CMD_TEXT_TEXTURE_UPDATE,
@@ -532,22 +534,6 @@ public:
 		uint8_t *m_pData; // will be freed by the command processor
 	};
 
-	struct SCommand_Texture_Update : public SCommand
-	{
-		SCommand_Texture_Update() :
-			SCommand(CMD_TEXTURE_UPDATE) {}
-
-		// texture information
-		int m_Slot;
-
-		int m_X;
-		int m_Y;
-		size_t m_Width;
-		size_t m_Height;
-		// data must be in RGBA format
-		uint8_t *m_pData; // will be freed by the command processor
-	};
-
 	struct SCommand_Texture_Destroy : public SCommand
 	{
 		SCommand_Texture_Destroy() :
@@ -815,10 +801,9 @@ class CGraphics_Threaded : public IEngineGraphics
 	size_t m_FirstFreeTexture;
 	int m_TextureMemoryUsage;
 
-	std::vector<uint8_t> m_vSpriteHelper;
+	std::atomic<bool> m_WarnPngliteIncompatibleImages = false;
 
-	bool m_WarnPngliteIncompatibleImages = false;
-
+	std::mutex m_WarningsMutex;
 	std::vector<SWarning> m_vWarnings;
 
 	// is a non full windowed (in a sense that the viewport won't include the whole window),
@@ -963,17 +948,15 @@ public:
 
 	IGraphics::CTextureHandle FindFreeTextureIndex();
 	void FreeTextureIndex(CTextureHandle *pIndex);
-	int UnloadTexture(IGraphics::CTextureHandle *pIndex) override;
+	void UnloadTexture(IGraphics::CTextureHandle *pIndex) override;
+	void LoadTextureAddWarning(size_t Width, size_t Height, int Flags, const char *pTexName);
 	IGraphics::CTextureHandle LoadTextureRaw(const CImageInfo &Image, int Flags, const char *pTexName = nullptr) override;
 	IGraphics::CTextureHandle LoadTextureRawMove(CImageInfo &Image, int Flags, const char *pTexName = nullptr) override;
-	int LoadTextureRawSub(IGraphics::CTextureHandle TextureId, int x, int y, const CImageInfo &Image) override;
-	IGraphics::CTextureHandle NullTexture() const override;
 
 	bool LoadTextTextures(size_t Width, size_t Height, CTextureHandle &TextTexture, CTextureHandle &TextOutlineTexture, uint8_t *pTextData, uint8_t *pTextOutlineData) override;
 	bool UnloadTextTextures(CTextureHandle &TextTexture, CTextureHandle &TextOutlineTexture) override;
-	bool UpdateTextTexture(CTextureHandle TextureId, int x, int y, size_t Width, size_t Height, const uint8_t *pData) override;
+	bool UpdateTextTexture(CTextureHandle TextureId, int x, int y, size_t Width, size_t Height, uint8_t *pData, bool IsMovedPointer) override;
 
-	CTextureHandle LoadSpriteTextureImpl(const CImageInfo &FromImageInfo, int x, int y, size_t w, size_t h, const char *pName);
 	CTextureHandle LoadSpriteTexture(const CImageInfo &FromImageInfo, const struct CDataSprite *pSprite) override;
 
 	bool IsImageSubFullyTransparent(const CImageInfo &FromImageInfo, int x, int y, int w, int h) override;
@@ -982,12 +965,10 @@ public:
 	// simple uncompressed RGBA loaders
 	IGraphics::CTextureHandle LoadTexture(const char *pFilename, int StorageType, int Flags = 0) override;
 	bool LoadPng(CImageInfo &Image, const char *pFilename, int StorageType) override;
+	bool LoadPng(CImageInfo &Image, const uint8_t *pData, size_t DataSize, const char *pContextName) override;
 
-	bool CheckImageDivisibility(const char *pFileName, CImageInfo &Img, int DivX, int DivY, bool AllowResize) override;
-	bool IsImageFormatRGBA(const char *pFileName, CImageInfo &Img) override;
-
-	void CopyTextureBufferSub(uint8_t *pDestBuffer, const CImageInfo &SourceImage, size_t SubOffsetX, size_t SubOffsetY, size_t SubCopyWidth, size_t SubCopyHeight) override;
-	void CopyTextureFromTextureBufferSub(uint8_t *pDestBuffer, size_t DestWidth, size_t DestHeight, const CImageInfo &SourceImage, size_t SrcSubOffsetX, size_t SrcSubOffsetY, size_t SrcSubCopyWidth, size_t SrcSubCopyHeight) override;
+	bool CheckImageDivisibility(const char *pContextName, CImageInfo &Image, int DivX, int DivY, bool AllowResize) override;
+	bool IsImageFormatRgba(const char *pContextName, const CImageInfo &Image) override;
 
 	void TextureSet(CTextureHandle TextureId) override;
 
@@ -1131,16 +1112,6 @@ public:
 	void DrawRect4(float x, float y, float w, float h, ColorRGBA ColorTopLeft, ColorRGBA ColorTopRight, ColorRGBA ColorBottomLeft, ColorRGBA ColorBottomRight, int Corners, float Rounding) override;
 	void DrawCircle(float CenterX, float CenterY, float Radius, int Segments) override;
 
-	const GL_STexCoord *GetCurTextureCoordinates() override
-	{
-		return m_aTexture;
-	}
-
-	const GL_SColor *GetCurColor() override
-	{
-		return m_aColor;
-	}
-
 	int CreateQuadContainer(bool AutomaticUpload = true) override;
 	void QuadContainerChangeAutomaticUpload(int ContainerIndex, bool AutomaticUpload) override;
 	void QuadContainerUpload(int ContainerIndex) override;
@@ -1274,7 +1245,9 @@ public:
 	bool IsIdle() const override;
 	void WaitForIdle() override;
 
-	SWarning *GetCurWarning() override;
+	void AddWarning(const SWarning &Warning);
+	std::optional<SWarning> CurrentWarning() override;
+
 	bool ShowMessageBox(unsigned Type, const char *pTitle, const char *pMsg) override;
 	bool IsBackendInitialized() override;
 

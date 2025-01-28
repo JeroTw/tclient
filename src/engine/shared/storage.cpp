@@ -19,25 +19,224 @@
 
 class CStorage : public IStorage
 {
-public:
 	char m_aaStoragePaths[MAX_PATHS][IO_MAX_PATH_LENGTH];
-	int m_NumPaths;
-	char m_aDatadir[IO_MAX_PATH_LENGTH];
-	char m_aUserdir[IO_MAX_PATH_LENGTH];
-	char m_aCurrentdir[IO_MAX_PATH_LENGTH];
-	char m_aBinarydir[IO_MAX_PATH_LENGTH];
+	int m_NumPaths = 0;
+	char m_aUserdir[IO_MAX_PATH_LENGTH] = "";
+	char m_aDatadir[IO_MAX_PATH_LENGTH] = "";
+	char m_aCurrentdir[IO_MAX_PATH_LENGTH] = "";
+	char m_aBinarydir[IO_MAX_PATH_LENGTH] = "";
 
-	CStorage()
+public:
+	bool Init(EInitializationType InitializationType, int NumArgs, const char **ppArguments)
 	{
-		mem_zero(m_aaStoragePaths, sizeof(m_aaStoragePaths));
-		m_NumPaths = 0;
-		m_aDatadir[0] = '\0';
-		m_aUserdir[0] = '\0';
-		m_aCurrentdir[0] = '\0';
-		m_aBinarydir[0] = '\0';
+		dbg_assert(NumArgs > 0, "Expected at least one argument");
+		const char *pExecutablePath = ppArguments[0];
+
+		FindUserDirectory();
+		FindDataDirectory(pExecutablePath);
+		FindCurrentDirectory();
+		FindBinaryDirectory(pExecutablePath);
+
+		if(!LoadPathsFromFile(pExecutablePath))
+		{
+			return false;
+		}
+
+		if(!m_NumPaths)
+		{
+			if(!AddDefaultPaths())
+			{
+				return false;
+			}
+		}
+
+		if(InitializationType == EInitializationType::BASIC)
+		{
+			return true;
+		}
+
+		if(m_aaStoragePaths[TYPE_SAVE][0] != '\0')
+		{
+			if(fs_makedir_rec_for(m_aaStoragePaths[TYPE_SAVE]) != 0 ||
+				fs_makedir(m_aaStoragePaths[TYPE_SAVE]) != 0)
+			{
+				log_error("storage", "failed to create the user directory");
+				return false;
+			}
+		}
+
+		bool Success = true;
+		if(InitializationType == EInitializationType::CLIENT)
+		{
+			Success &= CreateFolder("screenshots", TYPE_SAVE);
+			Success &= CreateFolder("screenshots/auto", TYPE_SAVE);
+			Success &= CreateFolder("screenshots/auto/stats", TYPE_SAVE);
+			Success &= CreateFolder("maps", TYPE_SAVE);
+			Success &= CreateFolder("maps/auto", TYPE_SAVE);
+			Success &= CreateFolder("mapres", TYPE_SAVE);
+			Success &= CreateFolder("downloadedmaps", TYPE_SAVE);
+			Success &= CreateFolder("skins", TYPE_SAVE);
+			Success &= CreateFolder("skins7", TYPE_SAVE);
+			Success &= CreateFolder("downloadedskins", TYPE_SAVE);
+			Success &= CreateFolder("themes", TYPE_SAVE);
+			Success &= CreateFolder("communityicons", TYPE_SAVE);
+			Success &= CreateFolder("assets", TYPE_SAVE);
+			Success &= CreateFolder("assets/emoticons", TYPE_SAVE);
+			Success &= CreateFolder("assets/entities", TYPE_SAVE);
+			Success &= CreateFolder("assets/game", TYPE_SAVE);
+			Success &= CreateFolder("assets/particles", TYPE_SAVE);
+			Success &= CreateFolder("assets/hud", TYPE_SAVE);
+			Success &= CreateFolder("assets/extras", TYPE_SAVE);
+#if defined(CONF_VIDEORECORDER)
+			Success &= CreateFolder("videos", TYPE_SAVE);
+#endif
+		}
+		Success &= CreateFolder("dumps", TYPE_SAVE);
+		Success &= CreateFolder("demos", TYPE_SAVE);
+		Success &= CreateFolder("demos/auto", TYPE_SAVE);
+		Success &= CreateFolder("demos/auto/race", TYPE_SAVE);
+		Success &= CreateFolder("demos/auto/server", TYPE_SAVE);
+		Success &= CreateFolder("demos/replays", TYPE_SAVE);
+		Success &= CreateFolder("editor", TYPE_SAVE);
+		Success &= CreateFolder("ghosts", TYPE_SAVE);
+		Success &= CreateFolder("teehistorian", TYPE_SAVE);
+
+		if(!Success)
+		{
+			log_error("storage", "failed to create default folders in the user directory");
+		}
+
+		return Success;
 	}
 
-	int Init(int StorageType, int NumArgs, const char **ppArguments)
+	bool LoadPathsFromFile(const char *pArgv0)
+	{
+		// check current directory
+		IOHANDLE File = io_open("storage.cfg", IOFLAG_READ);
+		if(!File)
+		{
+			// check usable path in argv[0]
+			unsigned int Pos = ~0U;
+			for(unsigned i = 0; pArgv0[i]; i++)
+				if(pArgv0[i] == '/' || pArgv0[i] == '\\')
+					Pos = i;
+			if(Pos < IO_MAX_PATH_LENGTH)
+			{
+				char aBuffer[IO_MAX_PATH_LENGTH];
+				str_copy(aBuffer, pArgv0, Pos + 1);
+				str_append(aBuffer, "/storage.cfg");
+				File = io_open(aBuffer, IOFLAG_READ);
+			}
+		}
+
+		CLineReader LineReader;
+		if(!LineReader.OpenFile(File))
+		{
+			log_error("storage", "couldn't open storage.cfg");
+			return true;
+		}
+		while(const char *pLine = LineReader.Get())
+		{
+			const char *pLineWithoutPrefix = str_startswith(pLine, "add_path ");
+			if(pLineWithoutPrefix)
+			{
+				if(!AddPath(pLineWithoutPrefix) && !m_NumPaths)
+				{
+					log_error("storage", "failed to add path for the user directory");
+					return false;
+				}
+			}
+		}
+
+		if(!m_NumPaths)
+		{
+			log_error("storage", "no usable paths found in storage.cfg");
+		}
+		return true;
+	}
+
+	bool AddDefaultPaths()
+	{
+		log_info("storage", "using standard paths");
+		if(!AddPath("$USERDIR"))
+		{
+			log_error("storage", "failed to add default path for the user directory");
+			return false;
+		}
+		AddPath("$DATADIR");
+		AddPath("$CURRENTDIR");
+		return true;
+	}
+
+	bool AddPath(const char *pPath)
+	{
+		if(!pPath[0])
+		{
+			log_error("storage", "cannot add empty path");
+			return false;
+		}
+		if(m_NumPaths >= MAX_PATHS)
+		{
+			log_error("storage", "cannot add path '%s', the maximum number of paths is %d", pPath, MAX_PATHS);
+			return false;
+		}
+
+		if(!str_comp(pPath, "$USERDIR"))
+		{
+			if(m_aUserdir[0])
+			{
+				str_copy(m_aaStoragePaths[m_NumPaths++], m_aUserdir);
+				log_info("storage", "added path '$USERDIR' ('%s')", m_aUserdir);
+				return true;
+			}
+			else
+			{
+				log_error("storage", "cannot add path '$USERDIR' because it could not be determined");
+				return false;
+			}
+		}
+		else if(!str_comp(pPath, "$DATADIR"))
+		{
+			if(m_aDatadir[0])
+			{
+				str_copy(m_aaStoragePaths[m_NumPaths++], m_aDatadir);
+				log_info("storage", "added path '$DATADIR' ('%s')", m_aDatadir);
+				return true;
+			}
+			else
+			{
+				log_error("storage", "cannot add path '$DATADIR' because it could not be determined");
+				return false;
+			}
+		}
+		else if(!str_comp(pPath, "$CURRENTDIR"))
+		{
+			m_aaStoragePaths[m_NumPaths++][0] = '\0';
+			log_info("storage", "added path '$CURRENTDIR' ('%s')", m_aCurrentdir);
+			return true;
+		}
+		else if(str_utf8_check(pPath))
+		{
+			if(fs_is_dir(pPath))
+			{
+				str_copy(m_aaStoragePaths[m_NumPaths++], pPath);
+				log_info("storage", "added path '%s'", pPath);
+				return true;
+			}
+			else
+			{
+				log_error("storage", "cannot add path '%s', which is not a directory", pPath);
+				return false;
+			}
+		}
+		else
+		{
+			log_error("storage", "cannot add path containing invalid UTF-8");
+			return false;
+		}
+	}
+
+	void FindUserDirectory()
 	{
 #if defined(CONF_PLATFORM_ANDROID)
 		// See InitAndroid in android_main.cpp for details about Android storage handling.
@@ -45,7 +244,6 @@ public:
 		// on Android. The user data is stored within a folder "user" in the external storage.
 		str_copy(m_aUserdir, "user");
 #else
-		// get userdir
 		char aFallbackUserdir[IO_MAX_PATH_LENGTH];
 		if(fs_storage_path("DDNet", m_aUserdir, sizeof(m_aUserdir)))
 		{
@@ -61,182 +259,9 @@ public:
 			str_copy(m_aUserdir, aFallbackUserdir);
 		}
 #endif
-
-		// get datadir
-		FindDatadir(ppArguments[0]);
-
-		// get binarydir
-		FindBinarydir(ppArguments[0]);
-
-		// get currentdir
-		if(!fs_getcwd(m_aCurrentdir, sizeof(m_aCurrentdir)))
-		{
-			log_error("storage", "could not determine current directory");
-		}
-
-		// load paths from storage.cfg
-		LoadPaths(ppArguments[0]);
-
-		if(!m_NumPaths)
-		{
-			dbg_msg("storage", "using standard paths");
-			AddDefaultPaths();
-		}
-
-		// add save directories
-		if(StorageType != STORAGETYPE_BASIC && m_NumPaths && (!m_aaStoragePaths[TYPE_SAVE][0] || fs_makedir_rec_for(m_aaStoragePaths[TYPE_SAVE]) || !fs_makedir(m_aaStoragePaths[TYPE_SAVE])))
-		{
-			if(StorageType == STORAGETYPE_CLIENT)
-			{
-				CreateFolder("screenshots", TYPE_SAVE);
-				CreateFolder("screenshots/auto", TYPE_SAVE);
-				CreateFolder("screenshots/auto/stats", TYPE_SAVE);
-				CreateFolder("maps", TYPE_SAVE);
-				CreateFolder("maps/auto", TYPE_SAVE);
-				CreateFolder("mapres", TYPE_SAVE);
-				CreateFolder("downloadedmaps", TYPE_SAVE);
-				CreateFolder("skins", TYPE_SAVE);
-				CreateFolder("downloadedskins", TYPE_SAVE);
-				CreateFolder("themes", TYPE_SAVE);
-				CreateFolder("communityicons", TYPE_SAVE);
-				CreateFolder("assets", TYPE_SAVE);
-				CreateFolder("assets/emoticons", TYPE_SAVE);
-				CreateFolder("assets/entities", TYPE_SAVE);
-				CreateFolder("assets/game", TYPE_SAVE);
-				CreateFolder("assets/particles", TYPE_SAVE);
-				CreateFolder("assets/hud", TYPE_SAVE);
-				CreateFolder("assets/extras", TYPE_SAVE);
-#if defined(CONF_VIDEORECORDER)
-				CreateFolder("videos", TYPE_SAVE);
-#endif
-			}
-			CreateFolder("dumps", TYPE_SAVE);
-			CreateFolder("demos", TYPE_SAVE);
-			CreateFolder("demos/auto", TYPE_SAVE);
-			CreateFolder("demos/auto/race", TYPE_SAVE);
-			CreateFolder("demos/auto/server", TYPE_SAVE);
-			CreateFolder("demos/replays", TYPE_SAVE);
-			CreateFolder("editor", TYPE_SAVE);
-			CreateFolder("ghosts", TYPE_SAVE);
-			CreateFolder("teehistorian", TYPE_SAVE);
-		}
-
-		return m_NumPaths ? 0 : 1;
 	}
 
-	void LoadPaths(const char *pArgv0)
-	{
-		// check current directory
-		IOHANDLE File = io_open("storage.cfg", IOFLAG_READ | IOFLAG_SKIP_BOM);
-		if(!File)
-		{
-			// check usable path in argv[0]
-			unsigned int Pos = ~0U;
-			for(unsigned i = 0; pArgv0[i]; i++)
-				if(pArgv0[i] == '/' || pArgv0[i] == '\\')
-					Pos = i;
-			if(Pos < IO_MAX_PATH_LENGTH)
-			{
-				char aBuffer[IO_MAX_PATH_LENGTH];
-				str_copy(aBuffer, pArgv0, Pos + 1);
-				str_append(aBuffer, "/storage.cfg");
-				File = io_open(aBuffer, IOFLAG_READ | IOFLAG_SKIP_BOM);
-			}
-
-			if(Pos >= IO_MAX_PATH_LENGTH || !File)
-			{
-				dbg_msg("storage", "couldn't open storage.cfg");
-				return;
-			}
-		}
-
-		CLineReader LineReader;
-		LineReader.Init(File);
-
-		char *pLine;
-		while((pLine = LineReader.Get()))
-		{
-			const char *pLineWithoutPrefix = str_startswith(pLine, "add_path ");
-			if(pLineWithoutPrefix)
-			{
-				AddPath(pLineWithoutPrefix);
-			}
-		}
-
-		io_close(File);
-
-		if(!m_NumPaths)
-			dbg_msg("storage", "no paths found in storage.cfg");
-	}
-
-	void AddDefaultPaths()
-	{
-		AddPath("$USERDIR");
-		AddPath("$DATADIR");
-		AddPath("$CURRENTDIR");
-	}
-
-	void AddPath(const char *pPath)
-	{
-		if(!pPath[0])
-		{
-			log_error("storage", "cannot add empty path");
-			return;
-		}
-		if(m_NumPaths >= MAX_PATHS)
-		{
-			log_error("storage", "cannot add path '%s', the maximum number of paths is %d", pPath, MAX_PATHS);
-			return;
-		}
-
-		if(!str_comp(pPath, "$USERDIR"))
-		{
-			if(m_aUserdir[0])
-			{
-				str_copy(m_aaStoragePaths[m_NumPaths++], m_aUserdir);
-				dbg_msg("storage", "added path '$USERDIR' ('%s')", m_aUserdir);
-			}
-			else
-			{
-				log_error("storage", "cannot add path '$USERDIR' because it could not be determined");
-			}
-		}
-		else if(!str_comp(pPath, "$DATADIR"))
-		{
-			if(m_aDatadir[0])
-			{
-				str_copy(m_aaStoragePaths[m_NumPaths++], m_aDatadir);
-				dbg_msg("storage", "added path '$DATADIR' ('%s')", m_aDatadir);
-			}
-			else
-			{
-				log_error("storage", "cannot add path '$DATADIR' because it could not be determined");
-			}
-		}
-		else if(!str_comp(pPath, "$CURRENTDIR"))
-		{
-			m_aaStoragePaths[m_NumPaths++][0] = '\0';
-			dbg_msg("storage", "added path '$CURRENTDIR' ('%s')", m_aCurrentdir);
-		}
-		else if(str_utf8_check(pPath))
-		{
-			if(fs_is_dir(pPath))
-			{
-				str_copy(m_aaStoragePaths[m_NumPaths++], pPath);
-				dbg_msg("storage", "added path '%s'", pPath);
-			}
-			else
-			{
-				log_error("storage", "cannot add path '%s', which is not a directory", pPath);
-			}
-		}
-		else
-		{
-			log_error("storage", "cannot add path containing invalid UTF-8");
-		}
-	}
-
-	void FindDatadir(const char *pArgv0)
+	void FindDataDirectory(const char *pArgv0)
 	{
 		// 1) use data-dir in PWD if present
 		if(fs_is_dir("data/mapres"))
@@ -295,7 +320,7 @@ public:
 
 			for(const char *pDir : apDirs)
 			{
-				char aBuf[128];
+				char aBuf[IO_MAX_PATH_LENGTH];
 				str_format(aBuf, sizeof(aBuf), "%s/data/mapres", pDir);
 				if(fs_is_dir(aBuf))
 				{
@@ -306,10 +331,20 @@ public:
 		}
 #endif
 
-		dbg_msg("storage", "warning: no data directory found");
+		log_warn("storage", "no data directory found");
 	}
 
-	void FindBinarydir(const char *pArgv0)
+	bool FindCurrentDirectory()
+	{
+		if(!fs_getcwd(m_aCurrentdir, sizeof(m_aCurrentdir)))
+		{
+			log_error("storage", "could not determine current directory");
+			return false;
+		}
+		return true;
+	}
+
+	void FindBinaryDirectory(const char *pArgv0)
 	{
 #if defined(BINARY_DIR)
 		str_copy(m_aBinarydir, BINARY_DIR, sizeof(m_aBinarydir));
@@ -451,9 +486,11 @@ public:
 			Type = fs_is_relative_path(pPath) ? TYPE_ALL : TYPE_ABSOLUTE;
 	}
 
-	IOHANDLE OpenFile(const char *pFilename, int Flags, int Type, char *pBuffer = 0, int BufferSize = 0) override
+	IOHANDLE OpenFile(const char *pFilename, int Flags, int Type, char *pBuffer = nullptr, int BufferSize = 0) override
 	{
 		TranslateType(Type, pFilename);
+
+		dbg_assert((Flags & IOFLAG_WRITE) == 0 || Type == TYPE_SAVE || Type == TYPE_ABSOLUTE, "IOFLAG_WRITE only usable with TYPE_SAVE and TYPE_ABSOLUTE");
 
 		char aBuffer[IO_MAX_PATH_LENGTH];
 		if(!pBuffer)
@@ -461,54 +498,49 @@ public:
 			pBuffer = aBuffer;
 			BufferSize = sizeof(aBuffer);
 		}
+		pBuffer[0] = '\0';
 
 		if(Type == TYPE_ABSOLUTE)
 		{
 			return io_open(GetPath(TYPE_ABSOLUTE, pFilename, pBuffer, BufferSize), Flags);
 		}
+
 		if(str_startswith(pFilename, "mapres/../skins/"))
 		{
 			pFilename = pFilename + 10; // just start from skins/
 		}
-		if(pFilename[0] == '/' || pFilename[0] == '\\' || str_find(pFilename, "../") != NULL || str_find(pFilename, "..\\") != NULL
+		if(pFilename[0] == '/' || pFilename[0] == '\\' || str_find(pFilename, "../") != nullptr || str_find(pFilename, "..\\") != nullptr
 #ifdef CONF_FAMILY_WINDOWS
 			|| (pFilename[0] && pFilename[1] == ':')
 #endif
 		)
 		{
 			// don't escape base directory
+			return nullptr;
 		}
-		else if(Flags & IOFLAG_WRITE)
+		else if(Type == TYPE_ALL)
 		{
-			return io_open(GetPath(TYPE_SAVE, pFilename, pBuffer, BufferSize), Flags);
+			// check all available directories
+			for(int i = TYPE_SAVE; i < m_NumPaths; ++i)
+			{
+				IOHANDLE Handle = io_open(GetPath(i, pFilename, pBuffer, BufferSize), Flags);
+				if(Handle)
+				{
+					return Handle;
+				}
+			}
+			return nullptr;
+		}
+		else if(Type >= TYPE_SAVE && Type < m_NumPaths)
+		{
+			// check wanted directory
+			return io_open(GetPath(Type, pFilename, pBuffer, BufferSize), Flags);
 		}
 		else
 		{
-			if(Type == TYPE_ALL)
-			{
-				// check all available directories
-				for(int i = TYPE_SAVE; i < m_NumPaths; ++i)
-				{
-					IOHANDLE Handle = io_open(GetPath(i, pFilename, pBuffer, BufferSize), Flags);
-					if(Handle)
-						return Handle;
-				}
-			}
-			else if(Type >= TYPE_SAVE && Type < m_NumPaths)
-			{
-				// check wanted directory
-				IOHANDLE Handle = io_open(GetPath(Type, pFilename, pBuffer, BufferSize), Flags);
-				if(Handle)
-					return Handle;
-			}
-			else
-			{
-				dbg_assert(false, "Type invalid");
-			}
+			dbg_assert(false, "Type invalid");
+			return nullptr;
 		}
-
-		pBuffer[0] = 0;
-		return 0;
 	}
 
 	template<typename F>
@@ -558,19 +590,33 @@ public:
 			*pResultLen = 0;
 			return false;
 		}
-		io_read_all(File, ppResult, pResultLen);
+		const bool ReadSuccess = io_read_all(File, ppResult, pResultLen);
 		io_close(File);
+		if(!ReadSuccess)
+		{
+			*ppResult = nullptr;
+			*pResultLen = 0;
+			return false;
+		}
 		return true;
 	}
 
 	char *ReadFileStr(const char *pFilename, int Type) override
 	{
-		IOHANDLE File = OpenFile(pFilename, IOFLAG_READ | IOFLAG_SKIP_BOM, Type);
+		IOHANDLE File = OpenFile(pFilename, IOFLAG_READ, Type);
 		if(!File)
 			return nullptr;
 		char *pResult = io_read_all_str(File);
 		io_close(File);
 		return pResult;
+	}
+
+	bool RetrieveTimes(const char *pFilename, int Type, time_t *pCreated, time_t *pModified) override
+	{
+		dbg_assert(Type == TYPE_ABSOLUTE || (Type >= TYPE_SAVE && Type < m_NumPaths), "Type invalid");
+
+		char aBuffer[IO_MAX_PATH_LENGTH];
+		return fs_file_time(GetPath(Type, pFilename, aBuffer, sizeof(aBuffer)), pCreated, pModified) == 0;
 	}
 
 	bool CalculateHashes(const char *pFilename, int Type, SHA256_DIGEST *pSha256, unsigned *pCrc) override
@@ -749,7 +795,9 @@ public:
 
 		bool Success = !fs_remove(aBuffer);
 		if(!Success)
-			dbg_msg("storage", "failed to remove: %s", aBuffer);
+		{
+			log_error("storage", "failed to remove file: %s", aBuffer);
+		}
 		return Success;
 	}
 
@@ -762,7 +810,9 @@ public:
 
 		bool Success = !fs_removedir(aBuffer);
 		if(!Success)
-			dbg_msg("storage", "failed to remove: %s", aBuffer);
+		{
+			log_error("storage", "failed to remove folder: %s", aBuffer);
+		}
 		return Success;
 	}
 
@@ -773,7 +823,9 @@ public:
 
 		bool Success = !fs_remove(aBuffer);
 		if(!Success)
-			dbg_msg("storage", "failed to remove binary: %s", aBuffer);
+		{
+			log_error("storage", "failed to remove binary file: %s", aBuffer);
+		}
 		return Success;
 	}
 
@@ -788,7 +840,9 @@ public:
 
 		bool Success = !fs_rename(aOldBuffer, aNewBuffer);
 		if(!Success)
-			dbg_msg("storage", "failed to rename: %s -> %s", aOldBuffer, aNewBuffer);
+		{
+			log_error("storage", "failed to rename file: %s -> %s", aOldBuffer, aNewBuffer);
+		}
 		return Success;
 	}
 
@@ -801,13 +855,15 @@ public:
 
 		if(fs_makedir_rec_for(aNewBuffer) < 0)
 		{
-			dbg_msg("storage", "cannot create folder for: %s", aNewBuffer);
+			log_error("storage", "failed to create folders for: %s", aNewBuffer);
 			return false;
 		}
 
 		bool Success = !fs_rename(aOldBuffer, aNewBuffer);
 		if(!Success)
-			dbg_msg("storage", "failed to rename: %s -> %s", aOldBuffer, aNewBuffer);
+		{
+			log_error("storage", "failed to rename binary file: %s -> %s", aOldBuffer, aNewBuffer);
+		}
 		return Success;
 	}
 
@@ -820,7 +876,9 @@ public:
 
 		bool Success = !fs_makedir(aBuffer);
 		if(!Success)
-			dbg_msg("storage", "failed to create folder: %s", aBuffer);
+		{
+			log_error("storage", "failed to create folder: %s", aBuffer);
+		}
 		return Success;
 	}
 
@@ -854,14 +912,13 @@ public:
 		return pBuffer;
 	}
 
-	static IStorage *Create(int StorageType, int NumArgs, const char **ppArguments)
+	static IStorage *Create(EInitializationType InitializationType, int NumArgs, const char **ppArguments)
 	{
 		CStorage *pStorage = new CStorage();
-		if(pStorage && pStorage->Init(StorageType, NumArgs, ppArguments))
+		if(!pStorage->Init(InitializationType, NumArgs, ppArguments))
 		{
-			dbg_msg("storage", "initialisation failed");
 			delete pStorage;
-			pStorage = nullptr;
+			return nullptr;
 		}
 		return pStorage;
 	}
@@ -895,32 +952,30 @@ const char *IStorage::FormatTmpPath(char *aBuf, unsigned BufSize, const char *pP
 	return aBuf;
 }
 
-IStorage *CreateStorage(int StorageType, int NumArgs, const char **ppArguments)
+IStorage *CreateStorage(IStorage::EInitializationType InitializationType, int NumArgs, const char **ppArguments)
 {
-	return CStorage::Create(StorageType, NumArgs, ppArguments);
+	return CStorage::Create(InitializationType, NumArgs, ppArguments);
 }
 
 IStorage *CreateLocalStorage()
 {
 	CStorage *pStorage = new CStorage();
-	if(pStorage)
+	if(!pStorage->FindCurrentDirectory() ||
+		!pStorage->AddPath("$CURRENTDIR"))
 	{
-		if(!fs_getcwd(pStorage->m_aCurrentdir, sizeof(pStorage->m_aCurrentdir)))
-		{
-			delete pStorage;
-			return NULL;
-		}
-		pStorage->AddPath("$CURRENTDIR");
+		delete pStorage;
+		return nullptr;
 	}
 	return pStorage;
 }
+
 IStorage *CreateTempStorage(const char *pDirectory)
 {
 	CStorage *pStorage = new CStorage();
-	if(!pStorage)
+	if(!pStorage->AddPath(pDirectory))
 	{
+		delete pStorage;
 		return nullptr;
 	}
-	pStorage->AddPath(pDirectory);
 	return pStorage;
 }

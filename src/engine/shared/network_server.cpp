@@ -122,8 +122,8 @@ int CNetServer::Update()
 
 SECURITY_TOKEN CNetServer::GetGlobalToken()
 {
-	static NETADDR NullAddr = {0};
-	return GetToken(NullAddr);
+	static const NETADDR NULL_ADDR = {0};
+	return GetToken(NULL_ADDR);
 }
 SECURITY_TOKEN CNetServer::GetToken(const NETADDR &Addr)
 {
@@ -254,9 +254,7 @@ int CNetServer::TryAcceptClient(NETADDR &Addr, SECURITY_TOKEN SecurityToken, boo
 
 	if(g_Config.m_Debug)
 	{
-		char aAddrStr[NETADDR_MAXSTRSIZE];
-		net_addr_str(&Addr, aAddrStr, sizeof(aAddrStr), true);
-		dbg_msg("security", "client accepted %s", aAddrStr);
+		dbg_msg("security", "client accepted %s", m_aSlots[Slot].m_Connection.PeerAddressString(true).data());
 	}
 
 	if(VanillaAuth)
@@ -391,7 +389,7 @@ void CNetServer::OnPreConnMsg(NETADDR &Addr, CNetPacketConstruct &Packet)
 				MapDataMsg.AddInt(0); // crc
 				MapDataMsg.AddInt(0); // chunk index
 				MapDataMsg.AddInt(0); // map size
-				MapDataMsg.AddRaw(NULL, 0); // map data
+				// no map data
 			}
 			else
 			{
@@ -640,7 +638,6 @@ int CNetServer::Recv(CNetChunk *pChunk, SECURITY_TOKEN *pResponseToken)
 
 		SECURITY_TOKEN Token;
 		bool Sixup = false;
-		*pResponseToken = NET_SECURITY_TOKEN_UNKNOWN;
 		if(CNetBase::UnpackPacket(pData, Bytes, &m_RecvUnpacker.m_Data, Sixup, &Token, pResponseToken) == 0)
 		{
 			if(m_RecvUnpacker.m_Data.m_Flags & NET_PACKETFLAG_CONNLESS)
@@ -685,7 +682,7 @@ int CNetServer::Recv(CNetChunk *pChunk, SECURITY_TOKEN *pResponseToken)
 					if(m_RecvUnpacker.m_Data.m_Flags & NET_PACKETFLAG_CONTROL)
 						OnConnCtrlMsg(Addr, Slot, m_RecvUnpacker.m_Data.m_aChunkData[0], m_RecvUnpacker.m_Data);
 
-					if(m_aSlots[Slot].m_Connection.Feed(&m_RecvUnpacker.m_Data, &Addr, Token))
+					if(m_aSlots[Slot].m_Connection.Feed(&m_RecvUnpacker.m_Data, &Addr, Token, *pResponseToken))
 					{
 						if(m_RecvUnpacker.m_Data.m_DataSize)
 							m_RecvUnpacker.Start(&Addr, &m_aSlots[Slot].m_Connection, Slot);

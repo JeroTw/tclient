@@ -39,10 +39,13 @@ public:
 		 * GetCompletePath, FileExists and FolderExists.
 		 */
 		TYPE_ALL_OR_ABSOLUTE = -4,
+	};
 
-		STORAGETYPE_BASIC = 0,
-		STORAGETYPE_SERVER,
-		STORAGETYPE_CLIENT,
+	enum class EInitializationType
+	{
+		BASIC,
+		SERVER,
+		CLIENT,
 	};
 
 	virtual int NumPaths() const = 0;
@@ -54,6 +57,7 @@ public:
 	virtual bool FolderExists(const char *pFilename, int Type) = 0;
 	virtual bool ReadFile(const char *pFilename, int Type, void **ppResult, unsigned *pResultLen) = 0;
 	virtual char *ReadFileStr(const char *pFilename, int Type) = 0;
+	virtual bool RetrieveTimes(const char *pFilename, int Type, time_t *pCreated, time_t *pModified) = 0;
 	virtual bool CalculateHashes(const char *pFilename, int Type, SHA256_DIGEST *pSha256, unsigned *pCrc = nullptr) = 0;
 	virtual bool FindFile(const char *pFilename, const char *pPath, int Type, char *pBuffer, int BufferSize) = 0;
 	virtual size_t FindFiles(const char *pFilename, const char *pPath, int Type, std::set<std::string> *pEntries) = 0;
@@ -72,7 +76,7 @@ public:
 	static const char *FormatTmpPath(char *aBuf, unsigned BufSize, const char *pPath);
 };
 
-extern IStorage *CreateStorage(int StorageType, int NumArgs, const char **ppArguments);
+extern IStorage *CreateStorage(IStorage::EInitializationType InitializationType, int NumArgs, const char **ppArguments);
 extern IStorage *CreateLocalStorage();
 extern IStorage *CreateTempStorage(const char *pDirectory);
 

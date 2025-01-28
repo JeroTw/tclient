@@ -19,13 +19,24 @@ enum
 	NUM_RESCUEMODES
 };
 
+enum class ESaveResult
+{
+	SUCCESS,
+	TEAM_FLOCK,
+	TEAM_NOT_FOUND,
+	CHAR_NOT_FOUND,
+	NOT_STARTED,
+	TEAM_0_MODE,
+	DRAGGER_ACTIVE
+};
+
 class CSaveTee
 {
 public:
 	CSaveTee();
 	~CSaveTee() = default;
-	void Save(CCharacter *pchr);
-	void Load(CCharacter *pchr, int Team, bool IsSwap = false);
+	void Save(CCharacter *pchr, bool AddPenalty = true);
+	bool Load(CCharacter *pchr, int Team, bool IsSwap = false);
 	char *GetString(const CSaveTeam *pTeam);
 	int FromString(const char *pString);
 	void LoadHookedPlayer(const CSaveTeam *pTeam);
@@ -137,6 +148,21 @@ private:
 	char m_aGameUuid[UUID_MAXSTRSIZE];
 };
 
+class CSaveHotReloadTee
+{
+public:
+	CSaveHotReloadTee() = default;
+	~CSaveHotReloadTee() = default;
+	void Save(CCharacter *pChr, bool AddPenalty = true);
+	bool Load(CCharacter *pChr, int Team, bool IsSwap = false);
+
+private:
+	CSaveTee m_SaveTee;
+	bool m_Super;
+	bool m_Invincible;
+	CSaveTee m_SavedTeleTee;
+};
+
 class CSaveTeam
 {
 public:
@@ -148,13 +174,13 @@ public:
 	int FromString(const char *pString);
 	// returns true if a team can load, otherwise writes a nice error Message in pMessage
 	bool MatchPlayers(const char (*paNames)[MAX_NAME_LENGTH], const int *pClientId, int NumPlayer, char *pMessage, int MessageLen) const;
-	int Save(CGameContext *pGameServer, int Team, bool Dry = false);
-	void Load(CGameContext *pGameServer, int Team, bool KeepCurrentWeakStrong);
+	ESaveResult Save(CGameContext *pGameServer, int Team, bool Dry = false, bool Force = false);
+	bool Load(CGameContext *pGameServer, int Team, bool KeepCurrentWeakStrong, bool IgnorePlayers = false);
 
 	CSaveTee *m_pSavedTees = nullptr;
 
 	// returns true if an error occurred
-	static bool HandleSaveError(int Result, int ClientId, CGameContext *pGameContext);
+	static bool HandleSaveError(ESaveResult Result, int ClientId, CGameContext *pGameContext);
 
 private:
 	CCharacter *MatchCharacter(CGameContext *pGameServer, int ClientId, int SaveId, bool KeepCurrentCharacter) const;

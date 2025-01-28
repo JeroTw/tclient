@@ -40,22 +40,26 @@ float CConsole::CResult::GetFloat(unsigned Index) const
 	return str_tofloat(m_apArgs[Index]);
 }
 
-ColorHSLA CConsole::CResult::GetColor(unsigned Index, bool Light) const
+std::optional<ColorHSLA> CConsole::CResult::GetColor(unsigned Index, float DarkestLighting) const
 {
 	if(Index >= m_NumArgs)
-		return ColorHSLA(0, 0, 0);
+		return std::nullopt;
 
 	const char *pStr = m_apArgs[Index];
 	if(str_isallnum(pStr) || ((pStr[0] == '-' || pStr[0] == '+') && str_isallnum(pStr + 1))) // Teeworlds Color (Packed HSL)
 	{
-		const ColorHSLA Hsla = ColorHSLA(str_toulong_base(pStr, 10), true);
-		if(Light)
-			return Hsla.UnclampLighting();
-		return Hsla;
+		unsigned long Value = str_toulong_base(pStr, 10);
+		if(Value == std::numeric_limits<unsigned long>::max())
+			return std::nullopt;
+		return ColorHSLA(Value, true).UnclampLighting(DarkestLighting);
 	}
 	else if(*pStr == '$') // Hex RGB/RGBA
 	{
-		return color_cast<ColorHSLA>(color_parse<ColorRGBA>(pStr + 1).value_or(ColorRGBA(0.0f, 0.0f, 0.0f, 1.0f)));
+		auto ParsedColor = color_parse<ColorRGBA>(pStr + 1);
+		if(ParsedColor)
+			return color_cast<ColorHSLA>(ParsedColor.value());
+		else
+			return std::nullopt;
 	}
 	else if(!str_comp_nocase(pStr, "red"))
 		return ColorHSLA(0.0f / 6.0f, 1, .5f);
@@ -76,7 +80,7 @@ ColorHSLA CConsole::CResult::GetColor(unsigned Index, bool Light) const
 	else if(!str_comp_nocase(pStr, "black"))
 		return ColorHSLA(0, 0, 0);
 
-	return ColorHSLA(0, 0, 0);
+	return std::nullopt;
 }
 
 const IConsole::CCommandInfo *CConsole::CCommand::NextCommandInfo(int AccessLevel, int FlagMask) const
@@ -129,12 +133,12 @@ int CConsole::ParseStart(CResult *pResult, const char *pString, int Length)
 	return 0;
 }
 
-int CConsole::ParseArgs(CResult *pResult, const char *pFormat)
+int CConsole::ParseArgs(CResult *pResult, const char *pFormat, bool IsColor)
 {
 	char Command = *pFormat;
 	char *pStr;
 	int Optional = 0;
-	int Error = 0;
+	int Error = PARSEARGS_OK;
 
 	pResult->ResetVictim();
 
@@ -155,7 +159,7 @@ int CConsole::ParseArgs(CResult *pResult, const char *pFormat)
 			{
 				if(!Optional)
 				{
-					Error = 1;
+					Error = PARSEARGS_MISSING_VALUE;
 					break;
 				}
 
@@ -191,7 +195,7 @@ int CConsole::ParseArgs(CResult *pResult, const char *pFormat)
 							pStr++; // skip due to escape
 					}
 					else if(pStr[0] == 0)
-						return 1; // return error
+						return PARSEARGS_MISSING_VALUE; // return error
 
 					*pDst = *pStr;
 					pDst++;
@@ -215,19 +219,39 @@ int CConsole::ParseArgs(CResult *pResult, const char *pFormat)
 
 				if(Command == 'r') // rest of the string
 					break;
-				else if(Command == 'v') // validate victim
-					pStr = str_skip_to_whitespace(pStr);
-				else if(Command == 'i') // validate int
-					pStr = str_skip_to_whitespace(pStr);
-				else if(Command == 'f') // validate float
-					pStr = str_skip_to_whitespace(pStr);
-				else if(Command == 's') // validate string
+				else if(Command == 'v' || Command == 'i' || Command == 'f' || Command == 's')
 					pStr = str_skip_to_whitespace(pStr);
 
 				if(pStr[0] != 0) // check for end of string
 				{
 					pStr[0] = 0;
 					pStr++;
+				}
+
+				// validate args
+				if(Command == 'i')
+				{
+					// don't validate colors here
+					if(!IsColor)
+					{
+						int Value;
+						if(!str_toint(pResult->GetString(pResult->NumArguments() - 1), &Value) ||
+							Value == std::numeric_limits<int>::max() || Value == std::numeric_limits<int>::min())
+						{
+							Error = PARSEARGS_INVALID_INTEGER;
+							break;
+						}
+					}
+				}
+				else if(Command == 'f')
+				{
+					float Value;
+					if(!str_tofloat(pResult->GetString(pResult->NumArguments() - 1), &Value) ||
+						Value == std::numeric_limits<float>::max() || Value == std::numeric_limits<float>::min())
+					{
+						Error = PARSEARGS_INVALID_FLOAT;
+						break;
+					}
 				}
 
 				if(pVictim)
@@ -269,15 +293,6 @@ char CConsole::NextParam(const char *&pFormat)
 	return *pFormat;
 }
 
-char *CConsole::Format(char *pBuf, int Size, const char *pFrom, const char *pStr)
-{
-	char aTimeBuf[80];
-	str_timestamp_format(aTimeBuf, sizeof(aTimeBuf), FORMAT_TIME);
-
-	str_format(pBuf, Size, "[%s][%s]: %s", aTimeBuf, pFrom, pStr);
-	return pBuf;
-}
-
 LEVEL IConsole::ToLogLevel(int Level)
 {
 	switch(Level)
@@ -314,7 +329,7 @@ void CConsole::Print(int Level, const char *pFrom, const char *pStr, ColorRGBA P
 {
 	LEVEL LogLevel = IConsole::ToLogLevel(Level);
 	// if console colors are not enabled or if the color is pure white, use default terminal color
-	if(g_Config.m_ConsoleEnableColors && mem_comp(&PrintColor, &gs_ConsoleDefaultColor, sizeof(ColorRGBA)) != 0)
+	if(g_Config.m_ConsoleEnableColors && PrintColor != gs_ConsoleDefaultColor)
 	{
 		log_log_color(LogLevel, ColorToLogColor(PrintColor), pFrom, "%s", pStr);
 	}
@@ -361,7 +376,7 @@ bool CConsole::LineIsValid(const char *pStr)
 
 	do
 	{
-		CResult Result;
+		CResult Result(-1);
 		const char *pEnd = pStr;
 		const char *pNextPart = 0;
 		int InString = 0;
@@ -412,8 +427,7 @@ void CConsole::ExecuteLineStroked(int Stroke, const char *pStr, int ClientId, bo
 	}
 	while(pStr && *pStr)
 	{
-		CResult Result;
-		Result.m_ClientId = ClientId;
+		CResult Result(ClientId);
 		const char *pEnd = pStr;
 		const char *pNextPart = 0;
 		int InString = 0;
@@ -487,17 +501,28 @@ void CConsole::ExecuteLineStroked(int Stroke, const char *pStr, int ClientId, bo
 
 				if(Stroke || IsStrokeCommand)
 				{
-					if(ParseArgs(&Result, pCommand->m_pParams))
+					bool IsColor = false;
 					{
-						char aBuf[TEMPCMD_NAME_LENGTH + TEMPCMD_PARAMS_LENGTH + 32];
-						str_format(aBuf, sizeof(aBuf), "Invalid arguments. Usage: %s %s", pCommand->m_pName, pCommand->m_pParams);
+						FCommandCallback pfnCallback = pCommand->m_pfnCallback;
+						void *pUserData = pCommand->m_pUserData;
+						TraverseChain(&pfnCallback, &pUserData);
+						IsColor = pfnCallback == &SColorConfigVariable::CommandCallback;
+					}
+
+					if(int Error = ParseArgs(&Result, pCommand->m_pParams, IsColor))
+					{
+						char aBuf[CMDLINE_LENGTH + 64];
+						if(Error == PARSEARGS_INVALID_INTEGER)
+							str_format(aBuf, sizeof(aBuf), "%s is not a valid integer.", Result.GetString(Result.NumArguments() - 1));
+						else if(Error == PARSEARGS_INVALID_FLOAT)
+							str_format(aBuf, sizeof(aBuf), "%s is not a valid decimal number.", Result.GetString(Result.NumArguments() - 1));
+						else
+							str_format(aBuf, sizeof(aBuf), "Invalid arguments. Usage: %s %s", pCommand->m_pName, pCommand->m_pParams);
 						Print(OUTPUT_LEVEL_STANDARD, "chatresp", aBuf);
 					}
 					else if(m_StoreCommands && pCommand->m_Flags & CFGFLAG_STORE)
 					{
-						m_ExecutionQueue.AddEntry();
-						m_ExecutionQueue.m_pLast->m_pCommand = pCommand;
-						m_ExecutionQueue.m_pLast->m_Result = Result;
+						m_vExecutionQueue.emplace_back(pCommand, Result);
 					}
 					else
 					{
@@ -606,11 +631,15 @@ void CConsole::ExecuteLineFlag(const char *pStr, int FlagMask, int ClientId, boo
 
 bool CConsole::ExecuteFile(const char *pFilename, int ClientId, bool LogFailure, int StorageType)
 {
-	// make sure that this isn't being executed already
+	int Count = 0;
+	// make sure that this isn't being executed already and that recursion limit isn't met
 	for(CExecFile *pCur = m_pFirstExec; pCur; pCur = pCur->m_pPrev)
-		if(str_comp(pFilename, pCur->m_pFilename) == 0)
-			return false;
+	{
+		Count++;
 
+		if(str_comp(pFilename, pCur->m_pFilename) == 0 || Count > FILE_RECURSION_LIMIT)
+			return false;
+	}
 	if(!m_pStorage)
 		return false;
 
@@ -622,23 +651,19 @@ bool CConsole::ExecuteFile(const char *pFilename, int ClientId, bool LogFailure,
 	m_pFirstExec = &ThisFile;
 
 	// exec the file
-	IOHANDLE File = m_pStorage->OpenFile(pFilename, IOFLAG_READ | IOFLAG_SKIP_BOM, StorageType);
-
+	CLineReader LineReader;
 	bool Success = false;
 	char aBuf[32 + IO_MAX_PATH_LENGTH];
-	if(File)
+	if(LineReader.OpenFile(m_pStorage->OpenFile(pFilename, IOFLAG_READ, StorageType)))
 	{
 		str_format(aBuf, sizeof(aBuf), "executing '%s'", pFilename);
 		Print(IConsole::OUTPUT_LEVEL_STANDARD, "console", aBuf);
 
-		CLineReader Reader;
-		Reader.Init(File);
-
-		char *pLine;
-		while((pLine = Reader.Get()))
+		while(const char *pLine = LineReader.Get())
+		{
 			ExecuteLine(pLine, ClientId);
+		}
 
-		io_close(File);
 		Success = true;
 	}
 	else if(LogFailure)
@@ -730,7 +755,7 @@ void CConsole::ConCommandStatus(IResult *pResult, void *pUser)
 void CConsole::ConUserCommandStatus(IResult *pResult, void *pUser)
 {
 	CConsole *pConsole = static_cast<CConsole *>(pUser);
-	CResult Result;
+	CResult Result(pResult->m_ClientId);
 	Result.m_pCommand = "access_status";
 	char aBuf[4];
 	str_format(aBuf, sizeof(aBuf), "%d", (int)IConsole::ACCESS_LEVEL_USER);
@@ -758,7 +783,6 @@ CConsole::CConsole(int FlagMask)
 	m_StoreCommands = true;
 	m_apStrokeStr[0] = "0";
 	m_apStrokeStr[1] = "1";
-	m_ExecutionQueue.Reset();
 	m_pFirstCommand = 0;
 	m_pFirstExec = 0;
 	m_pfnTeeHistorianCommandCallback = 0;
@@ -1007,9 +1031,11 @@ void CConsole::StoreCommands(bool Store)
 {
 	if(!Store)
 	{
-		for(CExecutionQueue::CQueueEntry *pEntry = m_ExecutionQueue.m_pFirst; pEntry; pEntry = pEntry->m_pNext)
-			pEntry->m_pCommand->m_pfnCallback(&pEntry->m_Result, pEntry->m_pCommand->m_pUserData);
-		m_ExecutionQueue.Reset();
+		for(CExecutionQueueEntry &Entry : m_vExecutionQueue)
+		{
+			Entry.m_pCommand->m_pfnCallback(&Entry.m_Result, Entry.m_pCommand->m_pUserData);
+		}
+		m_vExecutionQueue.clear();
 	}
 	m_StoreCommands = Store;
 }

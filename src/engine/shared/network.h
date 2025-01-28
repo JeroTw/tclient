@@ -9,6 +9,8 @@
 #include <base/math.h>
 #include <base/system.h>
 
+#include <array>
+
 class CHuffman;
 class CNetBan;
 class CPacker;
@@ -19,8 +21,18 @@ CURRENT:
 	packet header: 3 bytes
 		unsigned char flags_ack; // 6bit flags, 2bit ack
 			0.6:   ORNCaaAA
-			0.6.5: ORNCTUAA
+			0.6.5: ORNCT-AA
 			0.7:   --NORCAA
+
+		O = flag compression
+		R = flag resend
+		N = flag connless
+		C = flag control
+		T = flag token (0.6.5 only not supported by ddnet)
+		- = unused, should be zero
+		a = should be zero otherwise it messes up the ack number
+		A = bit of ack number
+
 
 		unsigned char ack; // 8 bit ack
 		unsigned char num_chunks; // 8 bit chunks
@@ -65,10 +77,11 @@ enum
 	NET_SEQUENCE_MASK = NET_MAX_SEQUENCE - 1,
 
 	NET_CONNSTATE_OFFLINE = 0,
-	NET_CONNSTATE_CONNECT = 1,
-	NET_CONNSTATE_PENDING = 2,
-	NET_CONNSTATE_ONLINE = 3,
-	NET_CONNSTATE_ERROR = 4,
+	NET_CONNSTATE_TOKEN = 1,
+	NET_CONNSTATE_CONNECT = 2,
+	NET_CONNSTATE_PENDING = 3,
+	NET_CONNSTATE_ONLINE = 4,
+	NET_CONNSTATE_ERROR = 5,
 
 	NET_PACKETFLAG_UNUSED = 1 << 0,
 	NET_PACKETFLAG_TOKEN = 1 << 1,
@@ -87,15 +100,28 @@ enum
 	NET_CTRLMSG_CONNECTACCEPT = 2,
 	NET_CTRLMSG_ACCEPT = 3,
 	NET_CTRLMSG_CLOSE = 4,
+	NET_CTRLMSG_TOKEN = 5,
 
 	NET_CONN_BUFFERSIZE = 1024 * 32,
 
 	NET_CONNLIMIT_IPS = 16,
 
-	NET_ENUM_TERMINATOR
+	NET_ENUM_TERMINATOR,
+
+	NET_TOKENCACHE_ADDRESSEXPIRY = 64,
+	NET_TOKENCACHE_PACKETEXPIRY = 5,
+};
+enum
+{
+	NET_TOKEN_MAX = 0xffffffff,
+	NET_TOKEN_NONE = NET_TOKEN_MAX,
+	NET_TOKEN_MASK = NET_TOKEN_MAX,
+
+	NET_TOKENREQUEST_DATASIZE = 512,
 };
 
 typedef int SECURITY_TOKEN;
+typedef unsigned int TOKEN;
 
 SECURITY_TOKEN ToSecurityToken(const unsigned char *pData);
 void WriteSecurityToken(unsigned char *pData, SECURITY_TOKEN Token);
@@ -217,7 +243,10 @@ private:
 	unsigned short m_PeerAck;
 	unsigned m_State;
 
+public:
 	SECURITY_TOKEN m_SecurityToken;
+
+private:
 	int m_RemoteClosed;
 	bool m_BlockCloseMsg;
 	bool m_UnknownSeq;
@@ -238,7 +267,16 @@ private:
 	NETSOCKET m_Socket;
 	NETSTATS m_Stats;
 
+	std::array<char, NETADDR_MAXSTRSIZE> m_aPeerAddrStr;
+	std::array<char, NETADDR_MAXSTRSIZE> m_aPeerAddrStrNoPort;
+	// client 0.7
+	static TOKEN GenerateToken7(const NETADDR *pPeerAddr);
+	class CNetBase *m_pNetBase;
+	bool IsSixup() { return m_Sixup; }
+
 	//
+	void SetPeerAddr(const NETADDR *pAddr);
+	void ClearPeerAddr();
 	void ResetStats();
 	void SetError(const char *pString);
 	void AckChunks(int Ack);
@@ -246,6 +284,7 @@ private:
 	int QueueChunkEx(int Flags, int DataSize, const void *pData, int Sequence);
 	void SendConnect();
 	void SendControl(int ControlMsg, const void *pExtra, int ExtraSize);
+	void SendControlWithToken7(int ControlMsg, SECURITY_TOKEN ResponseToken);
 	void ResendChunk(CNetChunkResend *pResend);
 	void Resend();
 
@@ -253,21 +292,28 @@ public:
 	bool m_TimeoutProtected;
 	bool m_TimeoutSituation;
 
+	void SetToken7(TOKEN Token);
+
 	void Reset(bool Rejoin = false);
 	void Init(NETSOCKET Socket, bool BlockCloseMsg);
 	int Connect(const NETADDR *pAddr, int NumAddrs);
+	int Connect7(const NETADDR *pAddr, int NumAddrs);
 	void Disconnect(const char *pReason);
 
 	int Update();
 	int Flush();
 
-	int Feed(CNetPacketConstruct *pPacket, NETADDR *pAddr, SECURITY_TOKEN SecurityToken = NET_SECURITY_TOKEN_UNSUPPORTED);
+	int Feed(CNetPacketConstruct *pPacket, NETADDR *pAddr, SECURITY_TOKEN SecurityToken = NET_SECURITY_TOKEN_UNSUPPORTED, SECURITY_TOKEN ResponseToken = NET_SECURITY_TOKEN_UNSUPPORTED);
 	int QueueChunk(int Flags, int DataSize, const void *pData);
 
 	const char *ErrorString();
 	void SignalResend();
 	int State() const { return m_State; }
 	const NETADDR *PeerAddress() const { return &m_PeerAddr; }
+	const std::array<char, NETADDR_MAXSTRSIZE> &PeerAddressString(bool IncludePort) const
+	{
+		return IncludePort ? m_aPeerAddrStr : m_aPeerAddrStrNoPort;
+	}
 	void ConnectAddresses(const NETADDR **ppAddrs, int *pNumAddrs) const
 	{
 		*ppAddrs = m_aConnectAddrs;
@@ -417,6 +463,7 @@ public:
 
 	// status requests
 	const NETADDR *ClientAddr(int ClientId) const { return m_aSlots[ClientId].m_Connection.PeerAddress(); }
+	const std::array<char, NETADDR_MAXSTRSIZE> &ClientAddrString(int ClientId, bool IncludePort) const { return m_aSlots[ClientId].m_Connection.PeerAddressString(IncludePort); }
 	bool HasSecurityToken(int ClientId) const { return m_aSlots[ClientId].m_Connection.SecurityToken() != NET_SECURITY_TOKEN_UNSUPPORTED; }
 	NETADDR Address() const { return m_Address; }
 	NETSOCKET Socket() const { return m_Socket; }
@@ -480,11 +527,46 @@ public:
 	CNetBan *NetBan() const { return m_pNetBan; }
 };
 
+class CNetTokenCache
+{
+public:
+	void Init(NETSOCKET Socket);
+	void SendPacketConnless(CNetChunk *pChunk);
+	void FetchToken(NETADDR *pAddr);
+	void AddToken(const NETADDR *pAddr, TOKEN Token);
+	TOKEN GetToken(const NETADDR *pAddr);
+	TOKEN GenerateToken();
+	void Update();
+
+private:
+	class CConnlessPacketInfo
+	{
+	public:
+		NETADDR m_Addr;
+		int m_DataSize;
+		unsigned char m_aData[NET_MAX_PAYLOAD];
+		int64_t m_Expiry;
+	};
+
+	class CAddressInfo
+	{
+	public:
+		NETADDR m_Addr;
+		TOKEN m_Token;
+		int64_t m_Expiry;
+	};
+
+	NETSOCKET m_Socket;
+	std::vector<CAddressInfo> m_TokenCache;
+	std::vector<CConnlessPacketInfo> m_ConnlessPackets;
+};
+
 // client side
 class CNetClient
 {
 	CNetConnection m_Connection;
 	CNetRecvUnpacker m_RecvUnpacker;
+	CNetTokenCache m_TokenCache;
 
 	CStun *m_pStun = nullptr;
 
@@ -497,9 +579,10 @@ public:
 	// connection state
 	int Disconnect(const char *pReason);
 	int Connect(const NETADDR *pAddr, int NumAddrs);
+	int Connect7(const NETADDR *pAddr, int NumAddrs);
 
 	// communication
-	int Recv(CNetChunk *pChunk);
+	int Recv(CNetChunk *pChunk, SECURITY_TOKEN *pResponseToken, bool Sixup);
 	int Send(CNetChunk *pChunk);
 
 	// pumping
@@ -537,7 +620,9 @@ public:
 	static int Decompress(const void *pData, int DataSize, void *pOutput, int OutputSize);
 
 	static void SendControlMsg(NETSOCKET Socket, NETADDR *pAddr, int Ack, int ControlMsg, const void *pExtra, int ExtraSize, SECURITY_TOKEN SecurityToken, bool Sixup = false);
+	static void SendControlMsgWithToken7(NETSOCKET Socket, NETADDR *pAddr, TOKEN Token, int Ack, int ControlMsg, TOKEN MyToken, bool Extended);
 	static void SendPacketConnless(NETSOCKET Socket, NETADDR *pAddr, const void *pData, int DataSize, bool Extended, unsigned char aExtra[4]);
+	static void SendPacketConnlessWithToken7(NETSOCKET Socket, NETADDR *pAddr, const void *pData, int DataSize, SECURITY_TOKEN Token, SECURITY_TOKEN ResponseToken);
 	static void SendPacket(NETSOCKET Socket, NETADDR *pAddr, CNetPacketConstruct *pPacket, SECURITY_TOKEN SecurityToken, bool Sixup = false, bool NoCompress = false);
 
 	static int UnpackPacket(unsigned char *pBuffer, int Size, CNetPacketConstruct *pPacket, bool &Sixup, SECURITY_TOKEN *pSecurityToken = nullptr, SECURITY_TOKEN *pResponseToken = nullptr);

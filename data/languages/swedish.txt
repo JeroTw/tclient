@@ -7,7 +7,7 @@
 #	3edcxzaq1		2020-06-25 00:00:00
 #	cur.ie			2020-09-28 00:00:00
 #	simpygirl		2022-02-20 00:00:00
-#	furo			2024-04-20 00:00:00
+#	furo			2025-01-04 00:00:00
 ##### /authors #####
 
 ##### translated strings #####
@@ -81,8 +81,8 @@ Client
 Connecting to
 == Ansluter till
 
-Connection Problems...
-== Anslutningsproblem...
+Connection Problems…
+== Anslutningsproblem…
 
 Console
 == Konsol
@@ -281,9 +281,6 @@ Player
 
 Player country:
 == Land
-
-Player options
-== Spelaralternativ
 
 Players
 == Spelare
@@ -501,9 +498,6 @@ Your skin
 Reset to defaults
 == Nollställ till standard
 
-Round
-== Runda
-
 Lht.
 == Ljusstyrka
 
@@ -687,8 +681,8 @@ Max CSVs
 Zoom in
 == Zooma in
 
-Update failed! Check log...
-== Updatering misslyckades! Kolla logg...
+Update failed! Check log…
+== Updatering misslyckades! Kolla logg…
 
 %d new mentions
 == %d nya nämningar
@@ -846,8 +840,8 @@ AntiPing: predict grenade paths
 Best
 == Bäst
 
-Updating...
-== Uppdaterar...
+Updating…
+== Uppdaterar…
 
 Clan plates size
 == Klanskylt storlek
@@ -866,9 +860,6 @@ DDNet %s is out!
 
 Highlighted message
 == Betona meddelande
-
-Use DDRace Scoreboard
-== Använd DDRace poänglista
 
 AntiPing: predict weapons
 == AntiPing: predicera vapen
@@ -905,9 +896,6 @@ Show HUD
 
 Pause
 == Pausa
-
-Reload
-== Ladda om
 
 Spree
 == Spree
@@ -1240,8 +1228,8 @@ Team %d
 Uploading map data to GPU
 == Laddar upp bana data till grafikkortet
 
-Trying to determine UDP connectivity...
-== Försöker att bestämma UDP anslutning...
+Trying to determine UDP connectivity…
+== Försöker att bestämma UDP anslutning…
 
 UDP seems to be filtered.
 == UDP verkar vara filtrerad.
@@ -1291,9 +1279,6 @@ Copy info
 No server selected
 == Ingen server vald
 
-Online players (%d)
-== Online spelare (%d)
-
 Online clanmates (%d)
 == Online klanmedlemmar (%d)
 
@@ -1309,9 +1294,6 @@ Click to remove this player from your friends list.
 
 Click to remove this clan from your friends list.
 == Klicka för att ta bort denna klan från din kompis lista.
-
-None
-== Ingen
 
 Are you sure that you want to remove the player '%s' from your friends list?
 == Är du säker på att du vill ta bort spelare '%s' från din kompis lista?
@@ -1522,9 +1504,6 @@ Show health, shields and ammo
 DDRace HUD
 == DDRace HUD
 
-Show client IDs in scoreboard
-== Visa klient ID i poänglista
-
 Show DDRace HUD
 == Visa DDRace HUD
 
@@ -1551,9 +1530,6 @@ Opacity of freeze bars inside freeze
 
 Hook collision line
 == Hook kollisions linje
-
-Hook collision line width
-== Hook kollisions linje bredd
 
 Hook collision line opacity
 == Hook kollisions linje opacitet
@@ -1615,7 +1591,7 @@ When you cross the start line, show a ghost tee replicating the movements of you
 Opacity
 == Opacitet
 
-Adjust the opacity of entities belonging to other teams, such as tees and nameplates
+Adjust the opacity of entities belonging to other teams, such as tees and name plates
 == Justera opaciteten av entities som tillhör ett annat lag, som t.ex. tees och namnskyltar
 
 Quads are used for background decoration
@@ -1848,3 +1824,253 @@ Always show own player's hook collision line
 
 Always show other players' hook collision lines
 == Visa alltid andra spelares hook kollisions linjer
+
+%d/%d KiB (%.1f KiB/s)
+== %d/%d KiB (%.1f KiB/s)
+
+Tee
+== Tee
+
+Show only chat messages from team members
+== Visa bara chattmeddelanden från lagkamrater
+
+[Spectating]
+Following %s
+== Följer %s
+
+Example of usage
+== Exempel på användning
+
+Round %d/%d
+== Runda %d/%d
+
+[Spectators]
+%d others…
+== %d andra…
+
+[Team and size]
+%d\n(%d/%d)
+== %d\n(%d/%d)
+
+Team %d (%d/%d)
+== Lag %d (%d/%d)
+
+https://wiki.ddnet.org/wiki/Mapping
+== https://wiki.ddnet.org/wiki/Mapping
+
+Could not resolve connect address '%s'. See local console for details.
+== Kunde inte förstå anslutnings adress '%s'. Se den lokala konsolen för detaljer.
+
+Connect address error
+== Anslutnings problem
+
+Could not connect dummy
+== Kunde inte ansluta dummy
+
+Dummy is not allowed on this server
+== Dummy är inte tillåten på denna server
+
+Please wait…
+== Vänligen vänta…
+
+Show client IDs (scoreboard, chat, spectator)
+== Visa klient IDen (poänglistan, chatt, åskadarmeny)
+
+Are you sure that you want to delete '%s'?
+== Är du säker att du vill ta bort '%s'?
+
+Delete skin
+== Ta bort skin
+
+Basic
+== Enkel
+
+Custom
+== Anpassa
+
+Unable to delete skin
+== Kunde inte ta bort skin
+
+Save skin
+== Spara skin
+
+Are you sure you want to save your skin? If a skin with this name already exists, it will be replaced.
+== Är du säker på att du vill spara ditt skin? Om detta skin finns redan, så kommer den att ersättas.
+
+Unable to save the skin
+== Misslyckades att spara skin
+
+Unable to save the skin with a reserved name
+== Misslyckades med att spara skin med reserverat namn
+
+No local servers found (ports %d-%d)
+== Inga lokala servrar hittades (portar %d-%d)
+
+[Hertz]
+Hz
+== Hz
+
+[skins]
+Body
+== Kropp
+
+[skins]
+Marking
+== Märkning
+
+[skins]
+Decoration
+== Dekoration
+
+[skins]
+Hands
+== Händer
+
+[skins]
+Feet
+== Fötter
+
+[skins]
+Eyes
+== Ögon
+
+Some fonts could not be loaded. Check the local console for details.
+== Vissa typsnitt kunde inte laddas in. Se den lokala konsolen för detaljer.
+
+Online friends (%d)
+== Online kompisar (%d)
+
+Add friends by entering their name below or by clicking their name in the player list.
+== Lägg till en kompis genom att skriva in deras namn nedanför eller genom att klicka på deras namn i spellistan.
+
+Add clanmates by entering their clan below and leaving the name blank.
+== Lägg till en klanmedlem genom att skriva in deras klan nedanför och lämna namn fältet blankt.
+
+Offline friends and clanmates will appear here.
+== Offline kompisar och klanmedlemmar kommer att synas här.
+
+Edit touch controls
+== Ändra pekskärms kontrollerna
+
+Close
+== Stäng
+
+Save changes
+== Spara ändringar
+
+Error saving touch controls
+== Misslyckades med att spara pekskärms kontrollerna
+
+Could not save touch controls to file. See local console for details.
+== Kunde inte spara pekskärms kontrollerna till en fil. Se den lokala konsolen för detaljer.
+
+Unsaved changes
+== Osparade ändringar
+
+Discard changes
+== Kasta ändringar
+
+Are you sure that you want to discard the current changes to the touch controls?
+== Är du säker att du vill kasta de nuvarande ändringar till pekskärms kontrollerna?
+
+Are you sure that you want to reset the touch controls to default?
+== Är du säker på att du vill nollställa pekskärms kontrollerna till standardinställningarna?
+
+Import from clipboard
+== Importera från urklipp
+
+Are you sure that you want to import the touch controls from the clipboard? This will overwrite your current touch controls.
+== Är du säker att du vill importera pekskärms kontrollerna från urklipp? Detta kommer att skriva över dina nuvarande inställningar.
+
+Export to clipboard
+== Exportera till urklipp
+
+Direct touch input while ingame
+== Direkt pekskärms kontroller medan du är i spel
+
+[Direct touch input]
+Disabled
+== Inaktiverad
+
+[Direct touch input]
+Active action
+== Aktivt läge
+
+[Direct touch input]
+Aim
+== Sikta
+
+[Direct touch input]
+Fire
+== Skjut
+
+[Direct touch input]
+Hook
+== Hook
+
+Direct touch input while spectating
+== Direkt pekskärms kontroller medan du är i åskådarläge
+
+Error loading touch controls
+== Misslyckades att ladda in pekskärms kontrollerna
+
+Could not load touch controls from file. See local console for details.
+== Misslyckades att ladda in pekskärms kontrollerna från fil. Se den lokala konsolen för detaljer.
+
+Could not load default touch controls from file. See local console for details.
+== Misslyckades att ladda in standard pekskärms kontrollerna från fil. Se den lokala konsolen för detaljer.
+
+Could not load touch controls from clipboard. See local console for details.
+== Misslyckades att ladda in pekskärms kontrollerna från urkipp. Se den lokala konsolen för detaljer.
+
+Width of your own hook collision line
+== Bredd av din egna hook kollisions linje
+
+Width of others' hook collision line
+== Bredd av andras hook kollisions linjer
+
+Preview 'Hook collisions' being pressed
+== Förhandsvisning när 'Hook kollisions' är aktivt
+
+Aim
+== Sikta
+
+Active: Fire
+== Läge: Skjut
+
+Active: Hook
+== Läge: Hook
+
+"%s" is not compatible with pnglite and cannot be loaded by old DDNet versions:
+== "%s" är inte en kompatibel med pnglite och kan inte laddas in av äldre versioner av DDNet:
+
+Loading background map
+== Laddar bakgrundsmap
+
+[Spectating Camera Mode Icon]
+AUTO
+== AUTO
+
+Toggle auto camera
+== Växla auto kamera
+
+https://wiki.ddnet.org/wiki/Touch_controls
+== https://wiki.ddnet.org/wiki/Touch_controls
+
+Show client IDs in name plates
+== Visa klient IDs i namnskyltar
+
+Hook Strength
+== Hook styrka
+
+Size of hook strength icon and number indicator
+== Storlek av hook styrka ikon och nummer indikator
+
+Key Presses
+== Knapptryckningar
+
+Size of key press icons
+== Storlek av knapptrycknings ikoner
+
+Server could not be started. Make sure to grant the notification permission in the app settings so the server can run in the background.
+== Servern kunde inte startas. Appen måste ha behörighet för notiser för att servern ska kunna köras i bakgrunden.

@@ -102,6 +102,8 @@ struct CDatafile
 
 bool CDataFileReader::Open(class IStorage *pStorage, const char *pFilename, int StorageType)
 {
+	dbg_assert(m_pDataFile == nullptr, "File already open");
+
 	log_trace("datafile", "loading. filename='%s'", pFilename);
 
 	IOHANDLE File = pStorage->OpenFile(pFilename, IOFLAG_READ, StorageType);
@@ -205,7 +207,6 @@ bool CDataFileReader::Open(class IStorage *pStorage, const char *pFilename, int 
 		return false;
 	}
 
-	Close();
 	m_pDataFile = pTmpDataFile;
 
 #if defined(CONF_ARCH_ENDIAN_BIG)
@@ -257,27 +258,22 @@ bool CDataFileReader::Close()
 
 IOHANDLE CDataFileReader::File() const
 {
-	if(!m_pDataFile)
-		return 0;
+	dbg_assert(m_pDataFile != nullptr, "File not open");
+
 	return m_pDataFile->m_File;
 }
 
 int CDataFileReader::NumData() const
 {
-	if(!m_pDataFile)
-	{
-		return 0;
-	}
+	dbg_assert(m_pDataFile != nullptr, "File not open");
+
 	return m_pDataFile->m_Header.m_NumRawData;
 }
 
 // returns the size in the file
 int CDataFileReader::GetFileDataSize(int Index) const
 {
-	if(!m_pDataFile)
-	{
-		return 0;
-	}
+	dbg_assert(m_pDataFile != nullptr, "File not open");
 
 	if(Index == m_pDataFile->m_Header.m_NumRawData - 1)
 		return m_pDataFile->m_Header.m_DataSize - m_pDataFile->m_Info.m_pDataOffsets[Index];
@@ -288,7 +284,9 @@ int CDataFileReader::GetFileDataSize(int Index) const
 // returns the size of the resulting data
 int CDataFileReader::GetDataSize(int Index) const
 {
-	if(!m_pDataFile || Index < 0 || Index >= m_pDataFile->m_Header.m_NumRawData)
+	dbg_assert(m_pDataFile != nullptr, "File not open");
+
+	if(Index < 0 || Index >= m_pDataFile->m_Header.m_NumRawData)
 	{
 		return 0;
 	}
@@ -312,10 +310,7 @@ int CDataFileReader::GetDataSize(int Index) const
 
 void *CDataFileReader::GetDataImpl(int Index, bool Swap)
 {
-	if(!m_pDataFile)
-	{
-		return nullptr;
-	}
+	dbg_assert(m_pDataFile != nullptr, "File not open");
 
 	if(Index < 0 || Index >= m_pDataFile->m_Header.m_NumRawData)
 		return nullptr;
@@ -413,6 +408,8 @@ void *CDataFileReader::GetDataSwapped(int Index)
 
 const char *CDataFileReader::GetDataString(int Index)
 {
+	dbg_assert(m_pDataFile != nullptr, "File not open");
+
 	if(Index == -1)
 		return "";
 	const int DataSize = GetDataSize(Index);
@@ -426,6 +423,7 @@ const char *CDataFileReader::GetDataString(int Index)
 
 void CDataFileReader::ReplaceData(int Index, char *pData, size_t Size)
 {
+	dbg_assert(m_pDataFile != nullptr, "File not open");
 	dbg_assert(Index >= 0 && Index < m_pDataFile->m_Header.m_NumRawData, "Index invalid");
 
 	free(m_pDataFile->m_ppDataPtrs[Index]);
@@ -435,6 +433,8 @@ void CDataFileReader::ReplaceData(int Index, char *pData, size_t Size)
 
 void CDataFileReader::UnloadData(int Index)
 {
+	dbg_assert(m_pDataFile != nullptr, "File not open");
+
 	if(Index < 0 || Index >= m_pDataFile->m_Header.m_NumRawData)
 		return;
 
@@ -445,8 +445,8 @@ void CDataFileReader::UnloadData(int Index)
 
 int CDataFileReader::GetItemSize(int Index) const
 {
-	if(!m_pDataFile)
-		return 0;
+	dbg_assert(m_pDataFile != nullptr, "File not open");
+
 	if(Index == m_pDataFile->m_Header.m_NumItems - 1)
 		return m_pDataFile->m_Header.m_ItemSize - m_pDataFile->m_Info.m_pItemOffsets[Index] - sizeof(CDatafileItem);
 	return m_pDataFile->m_Info.m_pItemOffsets[Index + 1] - m_pDataFile->m_Info.m_pItemOffsets[Index] - sizeof(CDatafileItem);
@@ -501,16 +501,7 @@ int CDataFileReader::GetInternalItemType(int ExternalType)
 
 void *CDataFileReader::GetItem(int Index, int *pType, int *pId, CUuid *pUuid)
 {
-	if(!m_pDataFile)
-	{
-		if(pType)
-			*pType = 0;
-		if(pId)
-			*pId = 0;
-		if(pUuid)
-			*pUuid = UUID_ZEROED;
-		return nullptr;
-	}
+	dbg_assert(m_pDataFile != nullptr, "File not open");
 
 	CDatafileItem *pItem = (CDatafileItem *)(m_pDataFile->m_Info.m_pItemStart + m_pDataFile->m_Info.m_pItemOffsets[Index]);
 
@@ -529,11 +520,10 @@ void *CDataFileReader::GetItem(int Index, int *pType, int *pId, CUuid *pUuid)
 
 void CDataFileReader::GetType(int Type, int *pStart, int *pNum)
 {
+	dbg_assert(m_pDataFile != nullptr, "File not open");
+
 	*pStart = 0;
 	*pNum = 0;
-
-	if(!m_pDataFile)
-		return;
 
 	Type = GetInternalItemType(Type);
 	for(int i = 0; i < m_pDataFile->m_Header.m_NumItemTypes; i++)
@@ -549,10 +539,7 @@ void CDataFileReader::GetType(int Type, int *pStart, int *pNum)
 
 int CDataFileReader::FindItemIndex(int Type, int Id)
 {
-	if(!m_pDataFile)
-	{
-		return -1;
-	}
+	dbg_assert(m_pDataFile != nullptr, "File not open");
 
 	int Start, Num;
 	GetType(Type, &Start, &Num);
@@ -580,48 +567,35 @@ void *CDataFileReader::FindItem(int Type, int Id)
 
 int CDataFileReader::NumItems() const
 {
-	if(!m_pDataFile)
-		return 0;
+	dbg_assert(m_pDataFile != nullptr, "File not open");
+
 	return m_pDataFile->m_Header.m_NumItems;
 }
 
 SHA256_DIGEST CDataFileReader::Sha256() const
 {
-	if(!m_pDataFile)
-	{
-		SHA256_DIGEST Result;
-		for(unsigned char &d : Result.data)
-		{
-			d = 0xff;
-		}
-		return Result;
-	}
+	dbg_assert(m_pDataFile != nullptr, "File not open");
+
 	return m_pDataFile->m_Sha256;
 }
 
 unsigned CDataFileReader::Crc() const
 {
-	if(!m_pDataFile)
-		return 0xFFFFFFFF;
+	dbg_assert(m_pDataFile != nullptr, "File not open");
+
 	return m_pDataFile->m_Crc;
 }
 
 int CDataFileReader::MapSize() const
 {
-	if(!m_pDataFile)
-		return 0;
+	dbg_assert(m_pDataFile != nullptr, "File not open");
+
 	return m_pDataFile->m_Header.m_Size + m_pDataFile->m_Header.SizeOffset();
 }
 
 CDataFileWriter::CDataFileWriter()
 {
 	m_File = 0;
-	for(CItemTypeInfo &ItemTypeInfo : m_aItemTypes)
-	{
-		ItemTypeInfo.m_Num = 0;
-		ItemTypeInfo.m_First = -1;
-		ItemTypeInfo.m_Last = -1;
-	}
 }
 
 CDataFileWriter::~CDataFileWriter()
@@ -720,17 +694,18 @@ int CDataFileWriter::AddItem(int Type, int Id, size_t Size, const void *pData, c
 		Info.m_pData = nullptr;
 
 	// link
-	Info.m_Prev = m_aItemTypes[Type].m_Last;
+	CItemTypeInfo &ItemType = m_ItemTypes[Type];
+	Info.m_Prev = ItemType.m_Last;
 	Info.m_Next = -1;
 
-	if(m_aItemTypes[Type].m_Last != -1)
-		m_vItems[m_aItemTypes[Type].m_Last].m_Next = NumItems;
-	m_aItemTypes[Type].m_Last = NumItems;
+	if(ItemType.m_Last != -1)
+		m_vItems[ItemType.m_Last].m_Next = NumItems;
+	ItemType.m_Last = NumItems;
 
-	if(m_aItemTypes[Type].m_First == -1)
-		m_aItemTypes[Type].m_First = NumItems;
+	if(ItemType.m_First == -1)
+		ItemType.m_First = NumItems;
 
-	m_aItemTypes[Type].m_Num++;
+	ItemType.m_Num++;
 	return NumItems;
 }
 
@@ -827,23 +802,15 @@ void CDataFileWriter::Finish()
 	for(const CDataInfo &DataInfo : m_vDatas)
 		DataSize += DataInfo.m_CompressedSize;
 
-	// Count number of item types
-	int NumItemTypes = 0;
-	for(const CItemTypeInfo &ItemType : m_aItemTypes)
-	{
-		if(ItemType.m_Num > 0)
-			++NumItemTypes;
-	}
-
 	// Calculate complete file size
-	const size_t TypesSize = NumItemTypes * sizeof(CDatafileItemType);
+	const size_t TypesSize = m_ItemTypes.size() * sizeof(CDatafileItemType);
 	const size_t HeaderSize = sizeof(CDatafileHeader);
 	const size_t OffsetSize = (m_vItems.size() + m_vDatas.size() * 2) * sizeof(int); // ItemOffsets, DataOffsets, DataUncompressedSizes
 	const size_t SwapSize = HeaderSize + TypesSize + OffsetSize + ItemSize;
 	const size_t FileSize = SwapSize + DataSize;
 
 	if(DEBUG)
-		dbg_msg("datafile", "NumItemTypes=%d TypesSize=%" PRIzu " ItemSize=%" PRIzu " DataSize=%" PRIzu, NumItemTypes, TypesSize, ItemSize, DataSize);
+		dbg_msg("datafile", "NumItemTypes=" PRIzu " TypesSize=%" PRIzu " ItemSize=%" PRIzu " DataSize=%" PRIzu, m_ItemTypes.size(), TypesSize, ItemSize, DataSize);
 
 	// This also ensures that SwapSize, ItemSize and DataSize are valid.
 	dbg_assert(FileSize <= (size_t)std::numeric_limits<int>::max(), "File size too large");
@@ -858,7 +825,7 @@ void CDataFileWriter::Finish()
 		Header.m_Version = 4;
 		Header.m_Size = FileSize - Header.SizeOffset();
 		Header.m_Swaplen = SwapSize - Header.SizeOffset();
-		Header.m_NumItemTypes = NumItemTypes;
+		Header.m_NumItemTypes = m_ItemTypes.size();
 		Header.m_NumItems = m_vItems.size();
 		Header.m_NumRawData = m_vDatas.size();
 		Header.m_ItemSize = ItemSize;
@@ -871,15 +838,15 @@ void CDataFileWriter::Finish()
 	}
 
 	// Write item types
-	for(int Type = 0, Count = 0; Type < (int)m_aItemTypes.size(); ++Type)
+	int ItemCount = 0;
+	for(const auto &[Type, ItemType] : m_ItemTypes)
 	{
-		if(!m_aItemTypes[Type].m_Num)
-			continue;
+		dbg_assert(ItemType.m_Num > 0, "Invalid item type entry");
 
 		CDatafileItemType Info;
 		Info.m_Type = Type;
-		Info.m_Start = Count;
-		Info.m_Num = m_aItemTypes[Type].m_Num;
+		Info.m_Start = ItemCount;
+		Info.m_Num = ItemType.m_Num;
 
 		if(DEBUG)
 			dbg_msg("datafile", "writing item type. Type=%x Start=%d Num=%d", Info.m_Type, Info.m_Start, Info.m_Num);
@@ -888,40 +855,41 @@ void CDataFileWriter::Finish()
 		swap_endian(&Info, sizeof(int), sizeof(CDatafileItemType) / sizeof(int));
 #endif
 		io_write(m_File, &Info, sizeof(Info));
-		Count += m_aItemTypes[Type].m_Num;
+		ItemCount += ItemType.m_Num;
 	}
 
 	// Write item offsets sorted by type
-	for(int Type = 0, Offset = 0; Type < (int)m_aItemTypes.size(); Type++)
+	int ItemOffset = 0;
+	for(const auto &[Type, ItemType] : m_ItemTypes)
 	{
 		// Write all items offsets of this type
-		for(int ItemIndex = m_aItemTypes[Type].m_First; ItemIndex != -1; ItemIndex = m_vItems[ItemIndex].m_Next)
+		for(int ItemIndex = ItemType.m_First; ItemIndex != -1; ItemIndex = m_vItems[ItemIndex].m_Next)
 		{
 			if(DEBUG)
-				dbg_msg("datafile", "writing item offset. Type=%d ItemIndex=%d Offset=%d", Type, ItemIndex, Offset);
+				dbg_msg("datafile", "writing item offset. Type=%d ItemIndex=%d ItemOffset=%d", Type, ItemIndex, ItemOffset);
 
-			int Temp = Offset;
+			int Temp = ItemOffset;
 #if defined(CONF_ARCH_ENDIAN_BIG)
 			swap_endian(&Temp, sizeof(int), sizeof(Temp) / sizeof(int));
 #endif
 			io_write(m_File, &Temp, sizeof(Temp));
-			Offset += m_vItems[ItemIndex].m_Size + sizeof(CDatafileItem);
+			ItemOffset += m_vItems[ItemIndex].m_Size + sizeof(CDatafileItem);
 		}
 	}
 
 	// Write data offsets
-	int Offset = 0, DataIndex = 0;
+	int DataOffset = 0, DataIndex = 0;
 	for(const CDataInfo &DataInfo : m_vDatas)
 	{
 		if(DEBUG)
-			dbg_msg("datafile", "writing data offset. DataIndex=%d Offset=%d", DataIndex, Offset);
+			dbg_msg("datafile", "writing data offset. DataIndex=%d DataOffset=%d", DataIndex, DataOffset);
 
-		int Temp = Offset;
+		int Temp = DataOffset;
 #if defined(CONF_ARCH_ENDIAN_BIG)
 		swap_endian(&Temp, sizeof(int), sizeof(Temp) / sizeof(int));
 #endif
 		io_write(m_File, &Temp, sizeof(Temp));
-		Offset += DataInfo.m_CompressedSize;
+		DataOffset += DataInfo.m_CompressedSize;
 		++DataIndex;
 	}
 
@@ -941,10 +909,10 @@ void CDataFileWriter::Finish()
 	}
 
 	// Write items sorted by type
-	for(int Type = 0; Type < (int)m_aItemTypes.size(); ++Type)
+	for(const auto &[Type, ItemType] : m_ItemTypes)
 	{
 		// Write all items of this type
-		for(int ItemIndex = m_aItemTypes[Type].m_First; ItemIndex != -1; ItemIndex = m_vItems[ItemIndex].m_Next)
+		for(int ItemIndex = ItemType.m_First; ItemIndex != -1; ItemIndex = m_vItems[ItemIndex].m_Next)
 		{
 			CDatafileItem Item;
 			Item.m_TypeAndId = (Type << 16) | m_vItems[ItemIndex].m_Id;

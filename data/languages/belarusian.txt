@@ -2,10 +2,11 @@
 #originally created by:
 #	arionwt1997
 #modified by:
-#	Chill & PoKeMoN		2023-03-31 16:00:00
-#	Chill & PoKeMoN		2023-07-02 00:54:00
+#	Chill [TD] & PoKeMoN [TD]		2023-03-31 16:00:00
+#	Chill [TD] & PoKeMoN [TD]		2023-07-02 00:54:00
 #	Chill [TD] & PoKeMoN [TD]		2023-09-22 17:49:00
 #	Chill [TD] & PoKeMoN [TD]		2023-11-14 12:42:00
+#	Chill [TD] & PoKeMoN [TD]		2024-08-23 23:17:00
 #	
 ##### /authors #####
 
@@ -80,8 +81,8 @@ Client
 Connecting to
 == Падлучэнне да
 
-Connection Problems...
-== Праблемы з падлучэннем...
+Connection Problems…
+== Праблемы з падлучэннем…
 
 Console
 == Кансоль
@@ -281,9 +282,6 @@ Player
 Player country:
 == Краіна гульца:
 
-Player options
-== Опцыі гульца
-
 Players
 == Гульцы
 
@@ -345,7 +343,7 @@ Shotgun
 == Драбавік
 
 Show chat
-== Паказаць чат
+== Паказваць чат
 
 Show friends only
 == Толькі з сябрамі
@@ -381,7 +379,7 @@ Stop record
 == Стоп запісу
 
 Strict gametype filter
-== Строгі фільтр рэжым.
+== Строгі фільтр рэжымаў
 
 Sudden Death
 == Раптоўная смерць
@@ -500,9 +498,6 @@ Your skin
 Reset to defaults
 == Скінуць налады
 
-Round
-== Раўнд
-
 Lht.
 == Светлата
 
@@ -517,9 +512,6 @@ LAN
 
 Name plates size
 == Памер таблічак з імёнамі
-
-Submitting the render commands failed. Try to update your GPU drivers.
-== Адпраўка каманд рэндэрынгу не выканана. Паспрабуйце абнавіць драйверы відэакарты.
 
 [Graphics error]
 Failed to swap framebuffers. Try to update your GPU drivers.
@@ -615,8 +607,8 @@ Browser
 Ghost
 == Прывід
 
-Trying to determine UDP connectivity...
-== Спроба вызначыць UDP падлучэнне...
+Trying to determine UDP connectivity…
+== Спроба вызначыць UDP падлучэнне…
 
 UDP seems to be filtered.
 == Здаецца, UDP фільтруецца.
@@ -872,9 +864,6 @@ Loading ghost files
 
 Time
 == Час
-
-Reload
-== Перазагрузіць
 
 Deactivate
 == Выключыць
@@ -1172,12 +1161,6 @@ Show votes window after voting
 DDRace HUD
 == DDRace HUD
 
-Use DDRace Scoreboard
-== Выкарыстоўваць табло ачкоў DDRace
-
-Show client IDs in scoreboard
-== Паказваць ID кліента ў табло ачкоў
-
 Show DDRace HUD
 == Паказваць DDRace HUD
 
@@ -1252,9 +1235,6 @@ Hook collision line
 
 Show other players' hook collision lines
 == Паказваць сутыкненні крука іншых гульцоў
-
-Hook collision line width
-== Шырыня лініі сутыкнення крука
 
 Hook collision line opacity
 == Непразрыстасьць лініі сутыкнення крука
@@ -1346,7 +1326,7 @@ Show text entities
 Opacity
 == Непразр.
 
-Adjust the opacity of entities belonging to other teams, such as tees and nameplates
+Adjust the opacity of entities belonging to other teams, such as tees and name plates
 == Рэгуляванне непразрыстасці аб'ектаў іншых каманд, такіх як Tee і таблічкі з імёнамі.
 
 Show others (own team only)
@@ -1400,8 +1380,8 @@ DDNet %s is available:
 Update now
 == Абнавіць зараз
 
-Updating...
-== Абнаўленне...
+Updating…
+== Абнаўленне…
 
 DDNet Client updated!
 == Кліент DDNet абнаўлён!
@@ -1476,8 +1456,8 @@ DDNet %s is out!
 Downloading %s:
 == Спампоўка %s:
 
-Update failed! Check log...
-== Абнаўленне не атрымалася. Праверце логі...
+Update failed! Check log…
+== Абнаўленне не атрымалася. Праверце логі…
 
 Restart
 == Перазапуск
@@ -1551,9 +1531,6 @@ A demo with this name already exists
 No server selected
 == Сервер не абраны
 
-Online players (%d)
-== Гульцоў анлайн (%d)
-
 Online clanmates (%d)
 == Членаў клана анлайн (%d)
 
@@ -1569,9 +1546,6 @@ Click to remove this player from your friends list.
 
 Click to remove this clan from your friends list.
 == Націсніце, как выдаліць гэты клан са свайго спіса сяброў.
-
-None
-== Пуста
 
 Add Clan
 == Дадаць клан
@@ -1630,7 +1604,7 @@ Go back the specified duration
 
 [Demo player duration]
 %d sec.
-== % сек.
+== %d сек.
 
 Change the skip duration
 == Змяніць працягласць пропуску
@@ -1715,134 +1689,388 @@ Entities background color
 == Колер фону энтыты
 
 [Graphics error]
-Failed during initialization. Try to change gfx_backend to OpenGL or Vulkan in settings_ddnet.cfg in the config directory and try again.
-== 
-
-[Graphics error]
-Out of VRAM. Try removing custom assets (skins, entities, etc.), especially those with high resolution.
-== 
-
-[Graphics error]
 An error during command recording occurred. Try to update your GPU drivers.
-== 
+== Адбылася памылка падчас выканання каманды запісу. Паспрабуйце абнавіць драйверы відэакарты.
 
 [Graphics error]
 A render command failed. Try to update your GPU drivers.
-== 
+== Каманда рэндэрынгу не выканана. Паспрабуйце абнавіць драйверы відэакарты.
+
+[Graphics error]
+Failed during initialization. Try to change gfx_backend to OpenGL or Vulkan in settings_ddnet.cfg in the config directory and try again.
+== Памылка падчас ініцыялізацыі. Паспрабуйце змяніць gfx_backend на OpenGL або Vulcan у settings_dnet.cfg ў тэчцы канфігурацыйных файлаў і паспрабуйце яшчэ раз.
+
+[Graphics error]
+Out of VRAM. Try removing custom assets (skins, entities, etc.), especially those with high resolution.
+== Недахоп VRAM. Паспрабуйце выдаліць карыстацкія тэкстуры (скіны, энтыты і г.д.), асабліва тыя, якія маюць высокую разрознасць.
+
+[Graphics error]
+Submitting the render commands failed. Try to update your GPU drivers.
+== Адпраўка каманд рэндэрынгу не ўдалася. Паспрабуйце абнавіць драйверы відэакарты.
 
 Failed saving the replay!
-== 
+== Не атрымалася захаваць паўтор!
 
 Saving settings to '%s' failed
-== 
+== Захаванне налад у '%s' не атрымалася
 
 Error saving settings
-== 
+== Памылка захавання налад
 
 Loading demo file from storage
-== 
+== Загрузка файла дэма са сховішча
 
 Searching
-== 
+== Пошук
 
 Enter Username
-== 
+== Увядзіце імя карыстальніка
 
 Enter Password
-== 
+== Увядзіце пароль
 
 NOT CONNECTED
-== 
+== НЕ ПАДЛУЧАНА
 
 Match %d of %d
-== 
+== Адпаведна %d з %d
 
 No results
-== 
+== Няма вынікаў
 
 Lines %d - %d (%s)
-== 
+== Радкі %d - %d (%s)
 
 Locked
-== 
+== Зафіксаваныя
 
 Following
-== 
+== Бягучыя
 
 Loading commands…
-== 
+== Загрузка каманд…
+
+[Spectating]
+Following %s
+== Назіранне за %s
 
 Press a key…
-== 
+== Націсніце клавішу…
 
 Main menu
-== 
+== Галоўнае меню
 
 Are you sure that you want to restart?
-== 
+== Вы ўпэўненыя, што хочаце пачаць нанова?
 
 There's an unsaved map in the editor, you might want to save it.
-== 
+== У рэдактары засталася не захаваная карта, магчыма вы хочаце яе захаваць.
 
 Continue anyway?
-== 
+== Працягнуць у любым выпадку?
+
+%d/%d KiB (%.1f KiB/s)
+== %d/%d КіБ (%.1f КіБ/с)
+
+Example of usage
+== Прыклад выкарыстання
 
 No login required
-== 
+== Уваход не патрабуецца
 
 Communities
-== 
+== Суполкі
 
 Server filter
-== 
+== Фільтр сервераў
 
 Friends
-== 
+== Сябры
 
 Loading…
-== 
+== Загрузка…
 
 Player info change cooldown
-== 
+== Затрымка абнаўлення інфармацыі пра гульца
+
+Tee
+== Tee
 
 Info Messages
-== 
+== Інфа. Паведамленні
 
 Show local time always
-== 
+== Заўсёды паказваць мясцовы час
 
 Always show chat
-== 
+== Заўсёды паказваць чат
+
+Show only chat messages from team members
+== Паказваць паведамленні чата толькі ад чальцоў каманды
 
 Chat font size
-== 
+== Памер шрыфта чата
 
 Chat width
-== 
+== Шырыня чата
 
 Show friend mark (♥) in name plates
-== 
+== Паказваць адзнаку сябра (♥) у таблічках з імёнамі
 
 Show hook strength icon indicator
-== 
+== Паказваць іконку індыкатара сілы крука
 
 Show hook strength number indicator
-== 
+== Паказваць нумар індыкатара сілы крука
 
 Authed name color in scoreboard
-== 
+== Колер аўтарызаваных гульцоў у табло ачкоў
 
 Same clan color in scoreboard
-== 
+== Колер твайго клана ў табло ачкоў
 
 Show own player's hook collision line
-== 
+== Паказваць сваю лінію сутыкнення крука
 
 Always show own player's hook collision line
-== 
+== Заўсёды паказваць сваю лінію сутыкнення крука
 
 Always show other players' hook collision lines
-== 
+== Заўсёды паказваць лініі сутыкнення крука іншых гульцоў
 
 Show finish messages
+== Паказваць паведамленні пра фініш
+
+Round %d/%d
+== Раўнд %d/%d
+
+[Spectators]
+%d others…
+== %d іншых…
+
+[Team and size]
+%d\n(%d/%d)
+== %d\n(%d/%d)
+
+Team %d (%d/%d)
+== Каманда %d (%d/%d)
+
+https://wiki.ddnet.org/wiki/Mapping
+== https://wiki.ddnet.org/wiki/Mapping
+
+Could not resolve connect address '%s'. See local console for details.
+== 
+
+Connect address error
+== 
+
+Could not connect dummy
+== 
+
+"%s" is not compatible with pnglite and cannot be loaded by old DDNet versions:
+== 
+
+Some fonts could not be loaded. Check the local console for details.
+== 
+
+Loading background map
+== 
+
+[Spectating Camera Mode Icon]
+AUTO
+== 
+
+Save skin
+== 
+
+Are you sure you want to save your skin? If a skin with this name already exists, it will be replaced.
+== 
+
+Unable to save the skin
+== 
+
+Unable to save the skin with a reserved name
+== 
+
+No local servers found (ports %d-%d)
+== 
+
+Online friends (%d)
+== 
+
+Add friends by entering their name below or by clicking their name in the player list.
+== 
+
+Add clanmates by entering their clan below and leaving the name blank.
+== 
+
+Offline friends and clanmates will appear here.
+== 
+
+Toggle auto camera
+== 
+
+Dummy is not allowed on this server
+== 
+
+Please wait…
+== 
+
+Edit touch controls
+== 
+
+Close
+== 
+
+https://wiki.ddnet.org/wiki/Touch_controls
+== 
+
+Save changes
+== 
+
+Error saving touch controls
+== 
+
+Could not save touch controls to file. See local console for details.
+== 
+
+Unsaved changes
+== 
+
+Discard changes
+== 
+
+Are you sure that you want to discard the current changes to the touch controls?
+== 
+
+Are you sure that you want to reset the touch controls to default?
+== 
+
+Import from clipboard
+== 
+
+Are you sure that you want to import the touch controls from the clipboard? This will overwrite your current touch controls.
+== 
+
+Export to clipboard
+== 
+
+Direct touch input while ingame
+== 
+
+[Direct touch input]
+Disabled
+== 
+
+[Direct touch input]
+Active action
+== 
+
+[Direct touch input]
+Aim
+== 
+
+[Direct touch input]
+Fire
+== 
+
+[Direct touch input]
+Hook
+== 
+
+Direct touch input while spectating
+== 
+
+Error loading touch controls
+== 
+
+Could not load touch controls from file. See local console for details.
+== 
+
+Could not load default touch controls from file. See local console for details.
+== 
+
+Could not load touch controls from clipboard. See local console for details.
+== 
+
+[Hertz]
+Hz
+== 
+
+Show client IDs (scoreboard, chat, spectator)
+== 
+
+Show client IDs in name plates
+== 
+
+Hook Strength
+== 
+
+Size of hook strength icon and number indicator
+== 
+
+Key Presses
+== 
+
+Size of key press icons
+== 
+
+Width of your own hook collision line
+== 
+
+Width of others' hook collision line
+== 
+
+Preview 'Hook collisions' being pressed
+== 
+
+Basic
+== 
+
+Custom
+== 
+
+Are you sure that you want to delete '%s'?
+== 
+
+Delete skin
+== 
+
+Unable to delete skin
+== 
+
+Server could not be started. Make sure to grant the notification permission in the app settings so the server can run in the background.
+== 
+
+[skins]
+Body
+== 
+
+[skins]
+Marking
+== 
+
+[skins]
+Decoration
+== 
+
+[skins]
+Hands
+== 
+
+[skins]
+Feet
+== 
+
+[skins]
+Eyes
+== 
+
+Aim
+== 
+
+Active: Fire
+== 
+
+Active: Hook
 == 

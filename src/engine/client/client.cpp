@@ -396,7 +396,7 @@ int *CClient::GetInput(int Tick, int IsDummy) const
 
 	if(Best != -1)
 		return (int *)m_aInputs[d][Best].m_aData;
-	return 0;
+	return nullptr;
 }
 
 // ------ state handling -----
@@ -695,8 +695,8 @@ void CClient::DisconnectWithReason(const char *pReason)
 	mem_zero(&m_CurrentServerInfo, sizeof(m_CurrentServerInfo));
 
 	// clear snapshots
-	m_aapSnapshots[0][SNAP_CURRENT] = 0;
-	m_aapSnapshots[0][SNAP_PREV] = 0;
+	m_aapSnapshots[0][SNAP_CURRENT] = nullptr;
+	m_aapSnapshots[0][SNAP_PREV] = nullptr;
 	m_aReceivedSnapshots[0] = 0;
 	m_LastDummy = false;
 
@@ -782,8 +782,8 @@ void CClient::DummyDisconnect(const char *pReason)
 	g_Config.m_ClDummy = 0;
 
 	m_aRconAuthed[1] = 0;
-	m_aapSnapshots[1][SNAP_CURRENT] = 0;
-	m_aapSnapshots[1][SNAP_PREV] = 0;
+	m_aapSnapshots[1][SNAP_CURRENT] = nullptr;
+	m_aapSnapshots[1][SNAP_PREV] = nullptr;
 	m_aReceivedSnapshots[1] = 0;
 	m_DummyConnected = false;
 	m_DummyConnecting = false;
@@ -1018,7 +1018,7 @@ const char *CClient::DummyName()
 	{
 		return g_Config.m_ClDummyName;
 	}
-	const char *pBase = 0;
+	const char *pBase = nullptr;
 	if(g_Config.m_PlayerName[0])
 	{
 		pBase = g_Config.m_PlayerName;
@@ -1106,7 +1106,7 @@ const char *CClient::LoadMap(const char *pName, const char *pFilename, SHA256_DI
 	str_copy(m_aCurrentMap, pName);
 	str_copy(m_aCurrentMapPath, pFilename);
 
-	return 0;
+	return nullptr;
 }
 
 static void FormatMapDownloadFilename(const char *pName, const SHA256_DIGEST *pSha256, int Crc, bool Temp, char *pBuffer, int BufferSize)
@@ -1162,7 +1162,7 @@ const char *CClient::LoadMapSearch(const char *pMapName, SHA256_DIGEST *pWantedS
 	// backward compatibility with old names
 	if(pWantedSha256)
 	{
-		FormatMapDownloadFilename(pMapName, 0, WantedCrc, false, aBuf, sizeof(aBuf));
+		FormatMapDownloadFilename(pMapName, nullptr, WantedCrc, false, aBuf, sizeof(aBuf));
 		pError = LoadMap(pMapName, aBuf, pWantedSha256, WantedCrc);
 		if(!pError)
 			return nullptr;
@@ -1559,7 +1559,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket, int Conn, bool Dummy)
 
 			if(m_DummyConnected && !m_DummyReconnectOnReload)
 			{
-				DummyDisconnect(0);
+				DummyDisconnect(nullptr);
 			}
 
 			ResetMapDownload(true);
@@ -1657,7 +1657,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket, int Conn, bool Dummy)
 				if(m_MapdownloadFileTemp)
 				{
 					io_close(m_MapdownloadFileTemp);
-					m_MapdownloadFileTemp = 0;
+					m_MapdownloadFileTemp = nullptr;
 				}
 				FinishMapDownload();
 			}
@@ -2326,7 +2326,7 @@ void CClient::ResetMapDownload(bool ResetActive)
 	if(m_MapdownloadFileTemp)
 	{
 		io_close(m_MapdownloadFileTemp);
-		m_MapdownloadFileTemp = 0;
+		m_MapdownloadFileTemp = nullptr;
 	}
 
 	if(Storage()->FileExists(m_aMapdownloadFilenameTemp, IStorage::TYPE_SAVE))
@@ -2389,7 +2389,7 @@ void CClient::ResetDDNetInfoTask()
 	if(m_pDDNetInfoTask)
 	{
 		m_pDDNetInfoTask->Abort();
-		m_pDDNetInfoTask = NULL;
+		m_pDDNetInfoTask = nullptr;
 	}
 }
 
@@ -2407,7 +2407,7 @@ TVersion ToVersion(char *pStr)
 			return gs_InvalidVersion;
 
 		aVersion[i] = str_toint(p);
-		p = strtok(NULL, ".");
+		p = strtok(nullptr, ".");
 	}
 
 	if(p)
@@ -3273,7 +3273,7 @@ void CClient::Run()
 					if(time_get() > m_BenchmarkStopTime)
 					{
 						io_close(m_BenchmarkFile);
-						m_BenchmarkFile = 0;
+						m_BenchmarkFile = nullptr;
 						Quit();
 					}
 				}
@@ -3567,7 +3567,7 @@ void CClient::AutoCSV_Cleanup()
 void CClient::Con_Screenshot(IConsole::IResult *pResult, void *pUserData)
 {
 	CClient *pSelf = (CClient *)pUserData;
-	pSelf->Graphics()->TakeScreenshot(0);
+	pSelf->Graphics()->TakeScreenshot(nullptr);
 }
 
 #if defined(CONF_VIDEORECORDER)
@@ -3928,7 +3928,7 @@ const char *CClient::DemoPlayer_Play(const char *pFilename, int StorageType)
 	m_DemoPlayer.Play();
 	GameClient()->OnEnterGame();
 
-	return 0;
+	return nullptr;
 }
 
 #if defined(CONF_VIDEORECORDER)
@@ -4009,7 +4009,7 @@ void CClient::DemoRecorder_Start(const char *pFilename, bool WithTimestamp, int 
 			m_pMap->Crc(),
 			"client",
 			m_pMap->MapSize(),
-			0,
+			nullptr,
 			m_pMap->File(),
 			nullptr,
 			nullptr);
@@ -4901,34 +4901,32 @@ int main(int argc, const char **argv)
 #endif
 
 	// Do not automatically translate touch events to mouse events and vice versa.
-	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
-	SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
+	SDL_SetHint("SDL_TOUCH_MOUSE_EVENTS", "0");
+	SDL_SetHint("SDL_MOUSE_TOUCH_EVENTS", "0");
 
 	// Support longer IME composition strings (enables SDL_TEXTEDITING_EXT).
 #if SDL_VERSION_ATLEAST(2, 0, 22)
 	SDL_SetHint(SDL_HINT_IME_SUPPORT_EXTENDED_TEXT, "1");
 #endif
 
-#if defined(CONF_PLATFORM_MACOS) && SDL_VERSION_ATLEAST(2, 24, 0)
+#if defined(CONF_PLATFORM_MACOS)
 	// Hints will not be set if there is an existing override hint or environment variable that takes precedence.
 	// So this respects cli environment overrides.
-	SDL_SetHint(SDL_HINT_MAC_OPENGL_ASYNC_DISPATCH, "1");
+	SDL_SetHint("SDL_MAC_OPENGL_ASYNC_DISPATCH", "1");
 #endif
 
-#if SDL_VERSION_ATLEAST(2, 0, 18)
 #if defined(CONF_FAMILY_WINDOWS)
-	SDL_SetHint(SDL_HINT_IME_SHOW_UI, g_Config.m_InpImeNativeUi ? "1" : "0");
+	SDL_SetHint("SDL_IME_SHOW_UI", g_Config.m_InpImeNativeUi ? "1" : "0");
 #else
-	SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
-#endif
+	SDL_SetHint("SDL_IME_SHOW_UI", "1");
 #endif
 
 #if defined(CONF_PLATFORM_ANDROID)
 	// Trap the Android back button so it can be handled in our code reliably
 	// instead of letting the system handle it.
-	SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
+	SDL_SetHint("SDL_ANDROID_TRAP_BACK_BUTTON", "1");
 	// Force landscape screen orientation.
-	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+	SDL_SetHint("SDL_IOS_ORIENTATIONS", "LandscapeLeft LandscapeRight");
 #endif
 
 	// init SDL
@@ -5015,7 +5013,7 @@ void CClient::RaceRecord_Start(const char *pFilename)
 			m_pMap->Crc(),
 			"client",
 			m_pMap->MapSize(),
-			0,
+			nullptr,
 			m_pMap->File(),
 			nullptr,
 			nullptr);
@@ -5080,6 +5078,9 @@ int CClient::GetPredictionTick()
 	{
 		PredictionMin = PredictionTick - 1;
 	}
+
+	if(PredictionMin <= 0)
+		return PredGameTick(g_Config.m_ClDummy);
 
 	PredictionTick = PredGameTick(g_Config.m_ClDummy) - PredictionMin;
 
